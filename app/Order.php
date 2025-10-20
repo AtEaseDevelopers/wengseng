@@ -60,4 +60,68 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+    public static function generateDoNumber()
+    {
+        $do_prefix         = Config::where('key', 'DO_PREFIX')->value('value') ?? 'DO-';
+        $do_format         = Config::where('key', 'DO_FORMAT')->value('value') ?? '';
+        $do_running_number = Config::where('key', 'DO_RUNNING_NUMBER')->value('value') ?? (date('YmdHis') . mt_rand(1000, 9999));
+              
+        return $do_prefix . '_' . $do_format . '_' . $do_running_number;
+    }
+
+    public static function updateDoNumberByOrderId($order)
+    {
+        $do_number = self::generateDoNumber();
+        if ($do_number != null) {
+            $order->do_no   = $do_number;
+            $order->do_date = date('Y-m-d');
+            $order->update();
+
+            return true;
+        }
+        return false;
+    }
+
+    public function updateOrderStatus($order, $status)
+    {
+        $order->status = $status;
+        $order->update();
+        return true;
+    }
+    
+    public static function getOrdersWithUser(array $orderIds)
+    {
+        return DB::table('orders')
+            ->join('users', 'orders.user_id', '=', 'users.id')
+            ->whereIn('orders.id', $orderIds)
+            ->select(
+                'orders.*',
+                'users.name as user_name',
+                'users.email as user_email',
+                'users.sql_customer_code'
+            )
+            ->get();
+    }
+
+   public static function getCartItemsForOrders(array $cartIds)
+    {
+        return DB::table('cart_products')
+            ->join('products', 'cart_products.product_id', '=', 'products.id')
+            ->leftJoin('uoms', 'products.uom_id', '=', 'uoms.id')
+            ->whereIn('cart_products.cart_id', $cartIds)
+            ->select(
+                'cart_products.cart_id',
+                'cart_products.product_id',
+                'cart_products.quantity as quantity',
+                'cart_products.weight as weight',
+                'cart_products.unit_price as unit_price',
+                'cart_products.price as price',
+                'cart_products.remark as remark',
+                'products.name as product_name',
+                'products.sku as product_sku',
+                'uoms.uom_name as uom_name'
+            )
+            ->get()
+            ->groupBy('cart_id'); // this groups in PHP, not SQL
+    }
 }

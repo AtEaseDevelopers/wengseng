@@ -22,6 +22,8 @@ use ZipArchive;
 use App\Order;
 use App\User;
 use Illuminate\Support\Facades\Auth;
+use App\Services\DeliveryOrderSyncService;
+use App\Services\InvoiceSyncService;
 
 class OrderController extends Controller
 {
@@ -1011,5 +1013,189 @@ class OrderController extends Controller
 
         $order->do_no = $prefix . $ending_digit;
         $order->save();
+    }
+
+    public function sync_delivery_order(Request $request)
+    {
+        $request->validate([
+            'orders_id' => 'required|string',
+        ]);
+
+        $orderIds = array_filter(explode(',', $request->input('orders_id')));
+        $orders = Order::getOrdersWithUser($orderIds);
+        $cartIds = $orders->pluck('cart_id')->filter()->unique()->all();
+
+        $cartItemsMap = Order::getCartItemsForOrders($cartIds);
+
+        $allOrders = $orders
+            ->map(function ($order) use ($cartItemsMap) {
+                return [
+                    'id' => $order->id,
+                    'do_no' => $order->do_no,
+                    'do_date' => $order->do_date,
+                    'attn_name' => $order->attn_name,
+                    'attn_contact' => $order->attn_contact,
+                    'billing_address' => $order->billing_address,
+                    'payment_method' => $order->payment_method,
+                    'sql_sync_status' => $order->sql_sync_status,
+                    'sql_sync_message' => $order->sql_sync_message,
+                    'user_name' => $order->user_name,
+                    'user_email' => $order->user_email,
+                    'sql_customer_code' => $order->sql_customer_code,
+                    'status' => $order->status,
+                    'cart_id' => $order->cart_id,
+                    'items' => $cartItemsMap[$order->cart_id] ?? [],
+                ];
+            })->keyBy('id'); // This sets 'id' as the key for $allOrders
+
+
+        $validOrders = [];
+        $invalidOrders = [];
+        $notFoundOrders = [];
+
+        foreach ($orderIds as $id) {
+            if (!isset($allOrders[$id])) {
+                $notFoundOrders[] = "Order ID $id not found.";
+                continue;
+            }
+
+            $order = $allOrders[$id];
+
+            $errors = [];
+
+           if ($order['status'] !== 'processing') {
+                $errors[] = "Status is '{$order['status']}'";
+            }
+
+            if (empty($order['do_no'])) {
+                $errors[] = "DO number is empty";
+            }
+
+            if ($order['sql_sync_status'] === 'success') {
+                $errors[] = "Already synced";
+            }
+
+            if (!empty($errors)) {
+                $invalidOrders[$id] = implode(', ', $errors);
+            } else {
+                $validOrders[$id] = $order;
+            }
+        }
+
+        $syncedOrders = [];
+        $syncFailures = [];
+
+        if (!empty($validOrders)) {
+            $syncResult = app(DeliveryOrderSyncService::class)->sync(collect($validOrders));
+
+            foreach ($syncResult as $id => $result) {
+                if ($result['status'] === 'success') {
+                    $syncedOrders[$id] = $result['message'];
+                } else {
+                    $syncFailures[$id] = $result['message'];
+                }
+            }
+        }
+
+        return redirect()->back()->with([
+            'success_count' => count($syncedOrders),
+            'fail_count' => count($invalidOrders) + count($syncFailures),
+            'synced_orders' => $syncedOrders,
+            'invalid_orders' => $invalidOrders,
+            'sync_failures' => $syncFailures,
+            'not_found' => $notFoundOrders,
+        ]);
+    }
+
+    public function sync_invoice(Request $request)
+    {
+        $request->validate([
+            'orders_id' => 'required|string',
+        ]);
+
+        $orderIds = array_filter(explode(',', $request->input('orders_id')));
+        $orders = Order::getOrdersWithUser($orderIds);
+        $cartIds = $orders->pluck('cart_id')->filter()->unique()->all();
+
+        $cartItemsMap = Order::getCartItemsForOrders($cartIds);
+
+        $allOrders = $orders
+            ->map(function ($order) use ($cartItemsMap) {
+                return [
+                    'id' => $order->id,
+                    'do_no' => $order->do_no,
+                    'do_date' => $order->do_date,
+                    'attn_name' => $order->attn_name,
+                    'attn_contact' => $order->attn_contact,
+                    'billing_address' => $order->billing_address,
+                    'payment_method' => $order->payment_method,
+                    'sql_sync_status' => $order->sql_sync_status,
+                    'sql_sync_respond' => $order->sql_sync_respond,
+                    'user_name' => $order->user_name,
+                    'user_email' => $order->user_email,
+                    'sql_customer_code' => $order->sql_customer_code,
+                    'status' => $order->status,
+                    'cart_id' => $order->cart_id,
+                    'items' => $cartItemsMap[$order->cart_id] ?? [],
+                ];
+            })->keyBy('id'); // This sets 'id' as the key for $allOrders
+
+
+        $validOrders = [];
+        $invalidOrders = [];
+        $notFoundOrders = [];
+
+        foreach ($orderIds as $id) {
+            if (!isset($allOrders[$id])) {
+                $notFoundOrders[] = "Order ID $id not found.";
+                continue;
+            }
+
+            $order = $allOrders[$id];
+
+            $errors = [];
+
+           if ($order['status'] !== 'processing') {
+                $errors[] = "Status is '{$order['status']}'";
+            }
+
+            if (empty($order['do_no'])) {
+                $errors[] = "DO number is empty";
+            }
+
+            if ($order['sql_sync_status'] === 'success') {
+                $errors[] = "Already synced";
+            }
+
+            if (!empty($errors)) {
+                $invalidOrders[$id] = implode(', ', $errors);
+            } else {
+                $validOrders[$id] = $order;
+            }
+        }
+
+        $syncedOrders = [];
+        $syncFailures = [];
+
+        if (!empty($validOrders)) {
+            $syncResult = app(InvoiceSyncService::class)->sync(collect($validOrders));
+
+            foreach ($syncResult as $id => $result) {
+                if ($result['status'] === 'success') {
+                    $syncedOrders[$id] = $result['message'];
+                } else {
+                    $syncFailures[$id] = $result['message'];
+                }
+            }
+        }
+
+        return redirect()->back()->with([
+            'success_count' => count($syncedOrders),
+            'fail_count' => count($invalidOrders) + count($syncFailures),
+            'synced_orders' => $syncedOrders,
+            'invalid_orders' => $invalidOrders,
+            'sync_failures' => $syncFailures,
+            'not_found' => $notFoundOrders,
+        ]);
     }
 }

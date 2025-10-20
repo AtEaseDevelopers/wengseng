@@ -137,6 +137,10 @@
                     <button type="button" class="btn btn-outline-primary d-none" id="change-order-lorry" data-bs-toggle="modal" data-bs-target="#assign-lorry">
                         Change Lorry
                     </button>
+                    <button type="button" class="btn btn-primary d-none" id="sync-sql-acc-invoice" data-bs-toggle="modal"
+                        data-bs-target="#sync-invoice">
+                        Sync SQL Acc Invoice
+                    </button>
                 </div>
                 <div class="d-flex gap-1">
                     <form action="{{ route('admin.orders.export') . $query_params }}">
@@ -433,6 +437,33 @@
         </div>
     </div>
 
+     <div class="modal" id="sync-invoice" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-warning text-dark rounded-top-4">
+                <h5 class="modal-title" id="confirmSyncLabel">Sync Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.sync-invoice') }}" method="POST">
+                @csrf
+                    <input type="hidden" class="orders_id" name="orders_id">
+                <div class="modal-body text-center">
+                <p class="fs-5 mb-0">Are you sure you want to sync this Invoice to SQL Accouting?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger d-flex align-items-center">
+                    Confirm
+                    <div class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                    </div>
+                </button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
 @endsection
 @section('script')
 
@@ -497,9 +528,11 @@
                     $(".status-action-button[data-status='" + "{{ __('order.status.completed') }}"+"']").show()
                     $('#change-order-statuses').removeClass('d-none');
                     $('#change-order-lorry').removeClass('d-none');
+                    $('#sync-sql-acc-invoice').removeClass('d-none');
                 } else {
                     $('#change-order-statuses').addClass('d-none');
                     $('#change-order-lorry').addClass('d-none');
+                    $('#sync-sql-acc-invoice').addClass('d-none');
                 }
             });
 
