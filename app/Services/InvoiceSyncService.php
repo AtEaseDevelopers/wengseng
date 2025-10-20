@@ -19,8 +19,8 @@ class InvoiceSyncService
             $log = LogAction::log([
                 'action_name'   => 'SyncInvoice',
                 'action_ref_no' => $order['do_no'],
-                'request' => app()->runningInConsole() ? [] : request()->all(),
-                'headers' => app()->runningInConsole() ? [] : request()->headers->all(),
+                'request'       => app()->runningInConsole() ? [] : request()->all(),
+                'headers'       => app()->runningInConsole() ? [] : request()->headers->all(),
                 'body'          => $order,
                 'remark'        => 'Sync started',
             ]);

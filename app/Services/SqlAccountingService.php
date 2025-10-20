@@ -285,7 +285,6 @@ class SqlAccountingService
         $lDetail = $BizObject->DataSets->Find("cdsDocDetail"); #lDetail contains detail data
         $lSN = $BizObject->DataSets->Find("cdsSerialNumber"); #lDetail contains detail data
 	
-
         $lDocKey = $BizObject->FindKeyByRef("DocNo", $lDocNo);
         if ($lDocKey != null) {
             echo "Update Dockey = ".$lDocKey.".<br>";
@@ -300,37 +299,30 @@ class SqlAccountingService
             $lMain->FindField("CompanyName")->AsString = $order['attn_name'];
             $lMain->FindField("Address1")->AsString = $order['billing_address'];
             $lMain->FindField("Address2")->AsString = '';
-            $lMain->FindField("Postcode")->AsString = $order['billing_postcode'] ?? '';
-            $lMain->FindField("City")->AsString = $order['billing_city'] ?? '';
-            $lMain->FindField("State")->AsString = $order['billing_state'] ?? '';
+            //$lMain->FindField("Postcode")->AsString = $order['billing_postcode'] ?? '';
+            //$lMain->FindField("City")->AsString = $order['billing_city'] ?? '';
+           // $lMain->FindField("State")->AsString = $order['billing_state'] ?? '';
             //$lMain->FindField("Country")->AsString = 'MY';
             $lMain->FindField("Phone1")->AsString = $order['attn_contact'];
+            $lMain->FindField("Description")->AsString = "Sales - Edited";
 
-            $r = $lDetail->RecordCount();
-            $x = 1;
-            while ($x <= $r) {
-                $lDetail->First();
-                $lDetail->Delete();
-                $x++;
-            }
+            $V = array("ANT", "UNIT");  #ItemCode, UOM
 
             foreach ($order['items'] as $index => $item) {      
-                $lDetail->Append();
-                $lDetail->FindField("ItemCode")->AsString = trim($item->product_sku) ?? "";
-                $lDetail->FindField("Description")->AsString = $item->product_name ?? "";
-                $lDetail->FindField("UOM")->AsString = trim($item->uom_name) ?? "";
-                $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
-                // $lDetail->FindField("Tax")->AsString = $item->tax_code;
-                // $lDetail->FindField("TaxRate")->AsString = $item->tax_rate;
-                // $lDetail->FindField("TaxInclusive")->value = $item->tax_inclusive;
-                $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
-                $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
-                // $lDetail->FindField("TaxAmt")->AsFloat = $item->tax;
-                $lDetail->FindField("REMARK1")->AsString = $item->remark ?? "";
-                // if ($index === array_key_last($order['items'])) {
-                //     $lDetail->FindField("DESCRIPTION3")->AsString = "\n\n\n\n" . $item->more_description;
-                // }
-                $lDetail->Post(); // ✅ Finish inserting this row
+                if ($lDetail->Locate("ItemCode;UOM", $V, False, False)){
+                    $lDetail->Edit();
+                    $lDetail->FindField("ItemCode")->AsString = trim($item->product_sku) ?? "";
+                    $lDetail->FindField("Description")->AsString = $item->product_name ?? "";
+                    $lDetail->FindField("UOM")->AsString = trim($item->uom_name) ?? "";
+                    $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
+                    $lDetail->FindField("Tax")->AsString = "";
+                    $lDetail->FindField("TaxRate")->AsString = "";
+                    $lDetail->FindField("TaxInclusive")->value = 0;
+                    $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
+                    $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
+                    $lDetail->FindField("TaxAmt")->AsFloat = 0;
+                    $lDetail->Post(); // ✅ Finish inserting this row
+                }
             }
         } else {
             echo "New Sale Invoice (Create)<br>";
@@ -350,7 +342,7 @@ class SqlAccountingService
             $lMain->FindField("State")->AsString = $order['billing_state'] ?? '';
             //$lMain->FindField("Country")->AsString = 'MY';
             $lMain->FindField("Phone1")->AsString = $order['attn_contact'];
-            //$lMain->FindField("Description")->AsString = $order['payment_method'];
+            $lMain->FindField("Description")->AsString = "Sales invoice";
             // Add detail rows
             //  +"cart_id": 28
             // +"product_id": 4
@@ -368,18 +360,22 @@ class SqlAccountingService
                 $lDetail->FindField("Description")->AsString = $item->product_name ?? "";
                 $lDetail->FindField("UOM")->AsString = trim($item->uom_name) ?? "";
                 $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
-                // $lDetail->FindField("Tax")->AsString = $item->tax_code;
-                // $lDetail->FindField("TaxRate")->AsString = $item->tax_rate;
-                // $lDetail->FindField("TaxInclusive")->value = $item->tax_inclusive;
+                $lDetail->FindField("Tax")->AsString = "";//$item->tax_code;
+                $lDetail->FindField("TaxRate")->AsString = "";//$item->tax_rate;
+                $lDetail->FindField("TaxInclusive")->value = 0;//$item->tax_inclusive;
                 $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
                 $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
-                // $lDetail->FindField("TaxAmt")->AsFloat = $item->tax;
-                $lDetail->FindField("REMARK1")->AsString = $item->remark ?? "";
+                $lDetail->FindField("TaxAmt")->AsFloat = 0; //$item->tax;
+                //$lDetail->FindField("REMARK1")->AsString = $item->remark ?? "";
                 // if ($index === array_key_last($order['items'])) {
                 //     $lDetail->FindField("DESCRIPTION3")->AsString = "\n\n\n\n" . $item->more_description;
                 // }
                 $lDetail->Post();
             }
+
+            // $lSN->Append;
+            // $lSN->FindField("SERIALNUMBER")->AsString = 'SN-136476';
+            // $lSN->Post;
         }
 
         $BizObject->Save();
@@ -390,5 +386,31 @@ class SqlAccountingService
         $BizObject->Close();
 
         return $doNo;
+    }
+
+    public function cancelInvoice($docNo)
+    {
+        try {
+          global $ComServer;
+	
+            $BizObject = $ComServer->BizObjects->Find("SL_IV");
+            $lMain = $BizObject->DataSets->Find("MainDataSet"); #lMain contains master data
+            
+            #Find IV Number
+            $lDocKey = $BizObject->FindKeyByRef("DocNo", $docNo);
+            
+            if ($lDocKey != null){
+                echo "Dockey = ".$lDocKey."<br>";
+                $BizObject->Params->Find("DocKey")->AsString = $lDocKey;
+                $BizObject->Open();
+                $BizObject->Delete();
+                echo date("d M Y h:i:s A")." - Record deleted<br>";
+            } else {
+                echo date("d M Y h:i:s A")." - Document Not Found<br>";
+            }		
+            return true;
+        } catch (Exception $e) {
+            throw new Exception("Cancel Sale Invoice failed: " . $e->getMessage());
+        }
     }
 }

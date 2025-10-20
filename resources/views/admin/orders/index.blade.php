@@ -187,6 +187,7 @@
                                     <th>Shipping Address</th>
                                     <th>Lorry</th>
                                     <th>Status</th>
+                                    <th>SQL Sync Status</th>
                                     <th>Last Updated At</th>
                                 </tr>
                             </thead>
@@ -261,6 +262,11 @@
                                             @endif
                                         </td>
                                         <td class="text-center">{!! __('order.status.' . $order->status) !!}</td>
+                                        <td class="text-center">
+                                            {!! isset($order->sql_sync_status, $order->sql_sync_message)
+                                                ? \App\Helper::sql_sync_status_badge($order->sql_sync_status, $order->sql_sync_message)
+                                                : '<span class="text-muted">—</span>' !!}
+                                        </td>
                                         <td>{{ $order->updated_at }}</td>
                                     </tr>
                                 @endforeach
@@ -614,6 +620,16 @@
                     }
                 });
             });
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
         });
     </script>
 
