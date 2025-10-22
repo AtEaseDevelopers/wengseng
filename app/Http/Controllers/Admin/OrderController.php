@@ -1159,9 +1159,9 @@ class OrderController extends Controller
                 $errors[] = "Status is '{$order['status']}'";
             }
 
-            // if (empty($order['do_no'])) {
-            //     $errors[] = "DO number is empty";
-            // }
+            if (empty($order['do_no'])) {
+                $errors[] = "DO number is empty";
+            }
 
             if ($order['sql_sync_status'] === 'success') {
                 $errors[] = "Already synced";
