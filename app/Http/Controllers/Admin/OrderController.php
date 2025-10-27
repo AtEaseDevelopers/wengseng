@@ -55,6 +55,8 @@ class OrderController extends Controller
                 "orders.delivering_date",
                 "orders.created_at",
                 "orders.updated_at",
+                "orders.sql_sync_status",
+                "orders.sql_sync_respond",
                 DB::raw("COALESCE(
                     (SELECT GROUP_CONCAT(
                         CONCAT(

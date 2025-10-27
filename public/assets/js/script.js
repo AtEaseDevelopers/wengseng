@@ -251,6 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const downloadZip = document.querySelector(".download-zip");
             const changeOrderStatuses = document.getElementById('change-order-statuses');
             const changeOrderLorry = document.getElementById('change-order-lorry');
+            const syncInvoice = document.getElementById('sync-invoice');
 
             if (document.querySelectorAll(".order-cbx-col input[type=checkbox]:checked").length) {
                 if (statusActionButton) {
@@ -268,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (changeOrderLorry) {
                     document.getElementById('change-order-lorry').classList.remove('d-none');
                 }
+                if (syncInvoice) {
+                    document.getElementById('sync-invoice').classList.remove('d-none');
+                }
             } else {
                 if (changeOrderLorry) {
                     document.getElementById('change-order-lorry').classList.add('d-none');
@@ -283,6 +287,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (statusActionButton) {
                     document.querySelector(".status-action-button[data-status='Completed']").style.display = "none";
+                }
+                
+                if (syncInvoice) {
+                    document.getElementById('sync-invoice').classList.add('d-none');
                 }
             }
         });
@@ -314,6 +322,17 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelector('#assign-lorry .orders_id').value = selectedOrders;
         });
     }
+
+     if (document.getElementById('sync-invoice')) {
+        document.getElementById('sync-invoice').addEventListener('click', function () {
+            var selectedOrders = [];
+            document.querySelectorAll("input[name='selected_orders[]']:checked").forEach(function (checkbox) {
+                selectedOrders.push(checkbox.value);
+            });
+            document.querySelector('#sync-invoice .orders_id').value = selectedOrders;
+        });
+    }
+
 
     if (document.querySelector('.btn-change-lorry')) {
         document.querySelectorAll('.btn-change-lorry').forEach(function(button) {

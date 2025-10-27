@@ -263,8 +263,8 @@
                                         </td>
                                         <td class="text-center">{!! __('order.status.' . $order->status) !!}</td>
                                         <td class="text-center">
-                                            {!! isset($order->sql_sync_status, $order->sql_sync_message)
-                                                ? \App\Helper::sql_sync_status_badge($order->sql_sync_status, $order->sql_sync_message)
+                                            {!! isset($order->sql_sync_status, $order->sql_sync_respond)
+                                                ? \App\Helper::sql_sync_status_badge($order->sql_sync_status, $order->sql_sync_respond)
                                                 : '<span class="text-muted">—</span>' !!}
                                         </td>
                                         <td>{{ $order->updated_at }}</td>

@@ -34,13 +34,13 @@ class Helper extends Model
         ];
     }
 
-public static function sql_sync_status_badge($status = null, $message = null)
+    public static function sql_sync_status_badge($status = null, $message = null)
     {
         // Define possible status → label/color mappings
         $statusMap = [
             'SUCCESS' => ['label' => 'Success', 'color' => 'success'],
-            'ERROR'   => ['label' => 'Failed', 'color' => 'danger'],
-            'FAILED'  => ['label' => 'Error', 'color' => 'warning'],
+            'ERROR'   => ['label' => 'Error', 'color' => 'danger'],
+            'FAILED'  => ['label' => 'Failed', 'color' => 'warning'],
             'DELETE'  => ['label' => 'Deleted', 'color' => 'info'],
         ];
 
@@ -58,5 +58,49 @@ public static function sql_sync_status_badge($status = null, $message = null)
             $tooltip,
             e($label)
         );
+    }
+
+    /**
+     * Safely retrieve a value (supports arrays, objects, or direct values).
+     *
+     * @param mixed $source Array, object, or value.
+     * @param string|int|null $key Key or property name (if array/object).
+     * @param mixed $default Default value if missing/invalid.
+     * @param bool $trim Whether to trim string values.
+     * @param bool $allow_zero Whether numeric 0 counts as valid.
+     * @return mixed
+     */
+    public static function safe_get($source, $key = null, $default = '', $trim = true, $allow_zero = true)
+    {
+        // Step 1: Determine the value to check
+        if (is_array($source) && $key !== null) {
+            $value = isset($source[$key]) ? $source[$key] : null;
+        } elseif (is_object($source) && $key !== null) {
+            $value = isset($source->$key) ? $source->$key : null;
+        } else {
+            $value = $source;
+        }
+
+        // Step 2: Null or unset
+        if (!isset($value) || is_null($value)) {
+            return $default;
+        }
+
+        // Step 3: Trim strings
+        if (is_string($value) && $trim) {
+            $value = trim($value);
+        }
+
+        // Step 4: Empty values (string, array, or false)
+        if ($value === '' || $value === [] || $value === false) {
+            return $default;
+        }
+
+        // Step 5: Numeric zero handling
+        if (!$allow_zero && is_numeric($value) && (float)$value == 0) {
+            return $default;
+        }
+
+        return $value;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Exception;
 use App\Config;
+use App\Helper;
 
 class SqlAccountingService
 {
@@ -331,19 +332,20 @@ class SqlAccountingService
             $lMain->FindField("DocNo")->AsString = $lDocNo;
            // $lMain->FindField("DOCNOSETKEY")->Value = config('config.do_docnosetkey'); // or use your own value
             //$lMain->FindField("DocNoEX")->AsString = $lDocNo;
-            $lMain->FindField("Code")->AsString = $order['sql_customer_code'] ?? null;
-            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("CompanyName")->AsString = $order['attn_name'];
-            $lMain->FindField("Address1")->AsString = $order['billing_address'];
-            $lMain->FindField("Address2")->AsString = '';
-            $lMain->FindField("Postcode")->AsString = $order['billing_postcode'] ?? '';
-            $lMain->FindField("City")->AsString = $order['billing_city'] ?? '';
-            $lMain->FindField("State")->AsString = $order['billing_state'] ?? '';
-            //$lMain->FindField("Country")->AsString = 'MY';
-            $lMain->FindField("Phone1")->AsString = $order['attn_contact'];
-            $lMain->FindField("Description")->AsString = "Sales invoice";
-            // Add detail rows
+            $lMain->FindField("Code")->AsString = Helper::safe_get($order, 'sql_customer_code', '');
+            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', 'Unnamed Customer');
+            $lMain->FindField("Address1")->AsString = Helper::safe_get($order, 'billing_address', '');
+            $lMain->FindField("Address2")->AsString = Helper::safe_get($order, 'billing_address2', ''); // optional, if you have one
+            $lMain->FindField("Postcode")->AsString = Helper::safe_get($order, 'billing_postcode', '');
+            $lMain->FindField("City")->AsString = Helper::safe_get($order, 'billing_city', '');
+            $lMain->FindField("State")->AsString = Helper::safe_get($order, 'billing_state', '');
+            $lMain->FindField("Country")->AsString = Helper::safe_get($order, 'billing_country', 'MY');
+            $lMain->FindField("Phone1")->AsString = Helper::safe_get($order, 'attn_contact', '');
+            $lMain->FindField("Description")->AsString = Helper::safe_get($order, 'description', 'Sales Invoice');
+
+            // // Add detail rows
             //  +"cart_id": 28
             // +"product_id": 4
             // +"quantity": null
@@ -362,10 +364,10 @@ class SqlAccountingService
                 $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
                 $lDetail->FindField("Tax")->AsString = "";//$item->tax_code;
                 $lDetail->FindField("TaxRate")->AsString = "";//$item->tax_rate;
-                $lDetail->FindField("TaxInclusive")->value = 0;//$item->tax_inclusive;
+                $lDetail->FindField("TaxInclusive")->value = "";//$item->tax_inclusive;
                 $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
                 $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
-                $lDetail->FindField("TaxAmt")->AsFloat = 0; //$item->tax;
+                $lDetail->FindField("TaxAmt")->AsFloat = 0.0; //$item->tax;
                 //$lDetail->FindField("REMARK1")->AsString = $item->remark ?? "";
                 // if ($index === array_key_last($order['items'])) {
                 //     $lDetail->FindField("DESCRIPTION3")->AsString = "\n\n\n\n" . $item->more_description;
