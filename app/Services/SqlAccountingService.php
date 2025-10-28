@@ -282,9 +282,9 @@ class SqlAccountingService
         $lDocNo = isset($order['do_no']) && !empty($order['do_no']) ? $order['do_no'] : '<<New>>';
 
         $BizObject = $ComServer->BizObjects->Find("SL_IV");
-        $lMain = $BizObject->DataSets->Find("MainDataSet"); #lMain contains master data
-        $lDetail = $BizObject->DataSets->Find("cdsDocDetail"); #lDetail contains detail data
-        $lSN = $BizObject->DataSets->Find("cdsSerialNumber"); #lDetail contains detail data
+        $lMain     = $BizObject->DataSets->Find("MainDataSet"); #lMain contains master data
+        $lDetail   = $BizObject->DataSets->Find("cdsDocDetail"); #lDetail contains detail data
+        $lSN       = $BizObject->DataSets->Find("cdsSerialNumber"); #lDetail contains detail data
 	
         $lDocKey = $BizObject->FindKeyByRef("DocNo", $lDocNo);
         if ($lDocKey != null) {
@@ -293,56 +293,54 @@ class SqlAccountingService
             $BizObject->Open();
             $BizObject->Edit();
             $lMain->Edit();
-            //$lMain->FindField("DocNoEX")->AsString = $lDocNo;
-            $lMain->FindField("Code")->AsString = $order['sql_customer_code'] ?? null;
-            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("CompanyName")->AsString = $order['attn_name'];
-            $lMain->FindField("Address1")->AsString = $order['billing_address'];
-            $lMain->FindField("Address2")->AsString = '';
-            //$lMain->FindField("Postcode")->AsString = $order['billing_postcode'] ?? '';
-            //$lMain->FindField("City")->AsString = $order['billing_city'] ?? '';
-           // $lMain->FindField("State")->AsString = $order['billing_state'] ?? '';
-            //$lMain->FindField("Country")->AsString = 'MY';
-            $lMain->FindField("Phone1")->AsString = $order['attn_contact'];
-            $lMain->FindField("Description")->AsString = "Sales - Edited";
+            $lMain->FindField("Code")->AsString        = Helper::safe_get($order, 'sql_customer_code', '');
+            $lMain->FindField("DocDate")->value        = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("PostDate")->value       = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', 'Unnamed Customer');
+            $lMain->FindField("Address1")->AsString    = Helper::safe_get($order, 'billing_address', '');
+            $lMain->FindField("Address2")->AsString    = Helper::safe_get($order, 'billing_address2', ''); // optional
+            // $lMain->FindField("Postcode")->AsString = Helper::safe_get($order, 'billing_postcode', '');
+            // $lMain->FindField("City")->AsString     = Helper::safe_get($order, 'billing_city', '');
+            // $lMain->FindField("State")->AsString    = Helper::safe_get($order, 'billing_state', '');
+            // $lMain->FindField("Country")->AsString  = Helper::safe_get($order, 'billing_country', 'MY');
+            $lMain->FindField("Phone1")->AsString      = Helper::safe_get($order, 'attn_contact', '');
+            $lMain->FindField("Description")->AsString = Helper::safe_get($order, 'description', 'Sales - Edited');
+
 
             $V = array("ANT", "UNIT");  #ItemCode, UOM
 
             foreach ($order['items'] as $index => $item) {      
                 if ($lDetail->Locate("ItemCode;UOM", $V, False, False)){
                     $lDetail->Edit();
-                    $lDetail->FindField("ItemCode")->AsString = trim($item->product_sku) ?? "";
-                    $lDetail->FindField("Description")->AsString = $item->product_name ?? "";
-                    $lDetail->FindField("UOM")->AsString = trim($item->uom_name) ?? "";
-                    $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
-                    $lDetail->FindField("Tax")->AsString = "";
-                    $lDetail->FindField("TaxRate")->AsString = "";
-                    $lDetail->FindField("TaxInclusive")->value = 0;
-                    $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
-                    $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
-                    $lDetail->FindField("TaxAmt")->AsFloat = 0;
+                    $lDetail->FindField("ItemCode")->AsString    = Helper::safe_get($item, 'product_sku', 'UNKNOWN', true);
+                    $lDetail->FindField("Description")->AsString = Helper::safe_get($item, 'product_name', '', true);
+                    $lDetail->FindField("UOM")->AsString         = Helper::safe_get($item, 'uom_name', 'UNIT', true);
+                    $lDetail->FindField("Qty")->AsFloat          = Helper::safe_get($item, 'quantity', 0.0);
+                    $lDetail->FindField("Tax")->AsString         = Helper::safe_get($item, 'tax_code', '');
+                    $lDetail->FindField("TaxRate")->AsString     = Helper::safe_get($item, 'tax_rate', '');
+                    $lDetail->FindField("TaxInclusive")->value   = Helper::safe_get($item, 'tax_inclusive', 0);
+                    $lDetail->FindField("UnitPrice")->AsFloat    = Helper::safe_get($item, 'unit_price', 0.0);
+                    $lDetail->FindField("Amount")->AsFloat       = Helper::safe_get($item, 'price', 0.0);
+                    $lDetail->FindField("TaxAmt")->AsFloat       = Helper::safe_get($item, 'tax', 0.0);
                     $lDetail->Post(); // ✅ Finish inserting this row
                 }
             }
         } else {
             echo "New Sale Invoice (Create)<br>";
             $BizObject->New();
-            $lMain->FindField("DocKey")->value = -1;
-            $lMain->FindField("DocNo")->AsString = $lDocNo;
-           // $lMain->FindField("DOCNOSETKEY")->Value = config('config.do_docnosetkey'); // or use your own value
-            //$lMain->FindField("DocNoEX")->AsString = $lDocNo;
-            $lMain->FindField("Code")->AsString = Helper::safe_get($order, 'sql_customer_code', '');
-            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
-            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("DocKey")->value         = -1;
+            $lMain->FindField("DocNo")->AsString       = $lDocNo;
+            $lMain->FindField("Code")->AsString        = Helper::safe_get($order, 'sql_customer_code', '');
+            $lMain->FindField("DocDate")->value        = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
+            $lMain->FindField("PostDate")->value       = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
             $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', 'Unnamed Customer');
-            $lMain->FindField("Address1")->AsString = Helper::safe_get($order, 'billing_address', '');
-            $lMain->FindField("Address2")->AsString = Helper::safe_get($order, 'billing_address2', ''); // optional, if you have one
-            $lMain->FindField("Postcode")->AsString = Helper::safe_get($order, 'billing_postcode', '');
-            $lMain->FindField("City")->AsString = Helper::safe_get($order, 'billing_city', '');
-            $lMain->FindField("State")->AsString = Helper::safe_get($order, 'billing_state', '');
-            $lMain->FindField("Country")->AsString = Helper::safe_get($order, 'billing_country', 'MY');
-            $lMain->FindField("Phone1")->AsString = Helper::safe_get($order, 'attn_contact', '');
+            $lMain->FindField("Address1")->AsString    = Helper::safe_get($order, 'billing_address', '');
+            $lMain->FindField("Address2")->AsString    = Helper::safe_get($order, 'billing_address2', ''); // optional, if you have one
+            $lMain->FindField("Postcode")->AsString    = Helper::safe_get($order, 'billing_postcode', '');
+            $lMain->FindField("City")->AsString        = Helper::safe_get($order, 'billing_city', '');
+            $lMain->FindField("State")->AsString       = Helper::safe_get($order, 'billing_state', '');
+            $lMain->FindField("Country")->AsString     = Helper::safe_get($order, 'billing_country', 'MY');
+            $lMain->FindField("Phone1")->AsString      = Helper::safe_get($order, 'attn_contact', '');
             $lMain->FindField("Description")->AsString = Helper::safe_get($order, 'description', 'Sales Invoice');
 
             // // Add detail rows
@@ -358,20 +356,16 @@ class SqlAccountingService
             // +"uom_name": "KG"
             foreach ($order['items'] as $index => $item) {
                 $lDetail->Append();
-                $lDetail->FindField("ItemCode")->AsString = trim($item->product_sku) ?? "";
-                $lDetail->FindField("Description")->AsString = $item->product_name ?? "";
-                $lDetail->FindField("UOM")->AsString = trim($item->uom_name) ?? "";
-                $lDetail->FindField("Qty")->AsFloat = $item->quantity ?? 0.0;
-                $lDetail->FindField("Tax")->AsString = "";//$item->tax_code;
-                $lDetail->FindField("TaxRate")->AsString = "";//$item->tax_rate;
-                $lDetail->FindField("TaxInclusive")->value = "";//$item->tax_inclusive;
-                $lDetail->FindField("UnitPrice")->AsFloat = $item->unit_price ?? 0.0;
-                $lDetail->FindField("Amount")->AsFloat = $item->price ?? 0.0;
-                $lDetail->FindField("TaxAmt")->AsFloat = 0.0; //$item->tax;
-                //$lDetail->FindField("REMARK1")->AsString = $item->remark ?? "";
-                // if ($index === array_key_last($order['items'])) {
-                //     $lDetail->FindField("DESCRIPTION3")->AsString = "\n\n\n\n" . $item->more_description;
-                // }
+                $lDetail->FindField("ItemCode")->AsString     = Helper::safe_get($item, 'product_sku', 'UNKNOWN', true);
+                $lDetail->FindField("Description")->AsString  = Helper::safe_get($item, 'product_name', '', true);
+                $lDetail->FindField("UOM")->AsString          = Helper::safe_get($item, 'uom_name', 'UNIT', true);
+                $lDetail->FindField("Qty")->AsFloat           = Helper::safe_get($item, 'quantity', 0.0);
+                $lDetail->FindField("Tax")->AsString          = Helper::safe_get($item, 'tax_code', '');
+                $lDetail->FindField("TaxRate")->AsString      = Helper::safe_get($item, 'tax_rate', '');
+                $lDetail->FindField("TaxInclusive")->value    = Helper::safe_get($item, 'tax_inclusive', 0);
+                $lDetail->FindField("UnitPrice")->AsFloat     = Helper::safe_get($item, 'unit_price', 0.0);
+                $lDetail->FindField("Amount")->AsFloat        = Helper::safe_get($item, 'price', 0.0);
+                $lDetail->FindField("TaxAmt")->AsFloat        = Helper::safe_get($item, 'tax', 0.0);
                 $lDetail->Post();
             }
 
