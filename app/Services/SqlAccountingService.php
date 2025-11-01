@@ -162,8 +162,8 @@ class SqlAccountingService
             $lMain->Edit();
             //$lMain->FindField("DocNoEX")->AsString = $lDocNo;
             $lMain->FindField("Code")->AsString = $order['sql_customer_code'] ?? null;
-            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime($order['do_date']));
+            $lMain->FindField("DocDate")->value = date("d/m/Y", strtotime($order['do_date']));
+            $lMain->FindField("PostDate")->value = date("d/m/Y", strtotime($order['do_date']));
             $lMain->FindField("CompanyName")->AsString = $order['attn_name'];
             $lMain->FindField("Address1")->AsString = $order['billing_address'];
             $lMain->FindField("Address2")->AsString = '';
@@ -207,8 +207,8 @@ class SqlAccountingService
            // $lMain->FindField("DOCNOSETKEY")->Value = config('config.do_docnosetkey'); // or use your own value
             //$lMain->FindField("DocNoEX")->AsString = $lDocNo;
             $lMain->FindField("Code")->AsString = $order['sql_customer_code'] ?? null;
-            $lMain->FindField("DocDate")->value = date("d-m-Y", strtotime($order['do_date']));
-            $lMain->FindField("PostDate")->value = date("d-m-Y", strtotime($order['do_date']));
+            $lMain->FindField("DocDate")->value = date("d/m/Y", strtotime($order['do_date']));
+            $lMain->FindField("PostDate")->value = date("d/m/Y", strtotime($order['do_date']));
             $lMain->FindField("CompanyName")->AsString = $order['attn_name'];
             $lMain->FindField("Address1")->AsString = $order['billing_address'];
             $lMain->FindField("Address2")->AsString = '';
@@ -294,9 +294,9 @@ class SqlAccountingService
             $BizObject->Edit();
             $lMain->Edit();
             $lMain->FindField("Code")->AsString        = Helper::safe_get($order, 'sql_customer_code', '');
-            $lMain->FindField("DocDate")->value        = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
-            $lMain->FindField("PostDate")->value       = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
-            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', 'Unnamed Customer');
+            $lMain->FindField("DocDate")->value        = date("d/m/Y", strtotime(Helper::safe_get($order, 'do_date', date('d/m/Y'))));
+            $lMain->FindField("PostDate")->value       = date("d/m/Y", strtotime(Helper::safe_get($order, 'do_date', date('d/m/Y'))));
+            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', '');
             $lMain->FindField("Address1")->AsString    = Helper::safe_get($order, 'billing_address', '');
             $lMain->FindField("Address2")->AsString    = Helper::safe_get($order, 'billing_address2', ''); // optional
             // $lMain->FindField("Postcode")->AsString = Helper::safe_get($order, 'billing_postcode', '');
@@ -312,7 +312,7 @@ class SqlAccountingService
             foreach ($order['items'] as $index => $item) {      
                 if ($lDetail->Locate("ItemCode;UOM", $V, False, False)){
                     $lDetail->Edit();
-                    $lDetail->FindField("ItemCode")->AsString    = Helper::safe_get($item, 'product_sku', 'UNKNOWN', true);
+                    $lDetail->FindField("ItemCode")->AsString    = Helper::safe_get($item, 'product_sku', '', true);
                     $lDetail->FindField("Description")->AsString = Helper::safe_get($item, 'product_name', '', true);
                     $lDetail->FindField("UOM")->AsString         = Helper::safe_get($item, 'uom_name', 'UNIT', true);
                     $lDetail->FindField("Qty")->AsFloat          = Helper::safe_get($item, 'quantity', 0.0);
@@ -331,9 +331,9 @@ class SqlAccountingService
             $lMain->FindField("DocKey")->value         = -1;
             $lMain->FindField("DocNo")->AsString       = $lDocNo;
             $lMain->FindField("Code")->AsString        = Helper::safe_get($order, 'sql_customer_code', '');
-            $lMain->FindField("DocDate")->value        = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
-            $lMain->FindField("PostDate")->value       = date("d-m-Y", strtotime(Helper::safe_get($order, 'do_date', date('Y-m-d'))));
-            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', 'Unnamed Customer');
+            $lMain->FindField("DocDate")->value        = date("d/m/Y", strtotime(Helper::safe_get($order, 'do_date', date('d/m/Y'))));
+            $lMain->FindField("PostDate")->value       = date("d/m/Y", strtotime(Helper::safe_get($order, 'do_date', date('d/m/Y'))));
+            $lMain->FindField("CompanyName")->AsString = Helper::safe_get($order, 'attn_name', '');
             $lMain->FindField("Address1")->AsString    = Helper::safe_get($order, 'billing_address', '');
             $lMain->FindField("Address2")->AsString    = Helper::safe_get($order, 'billing_address2', ''); // optional, if you have one
             $lMain->FindField("Postcode")->AsString    = Helper::safe_get($order, 'billing_postcode', '');
@@ -356,7 +356,7 @@ class SqlAccountingService
             // +"uom_name": "KG"
             foreach ($order['items'] as $index => $item) {
                 $lDetail->Append();
-                $lDetail->FindField("ItemCode")->AsString     = Helper::safe_get($item, 'product_sku', 'UNKNOWN', true);
+                $lDetail->FindField("ItemCode")->AsString     = Helper::safe_get($item, 'product_sku', '', true);
                 $lDetail->FindField("Description")->AsString  = Helper::safe_get($item, 'product_name', '', true);
                 $lDetail->FindField("UOM")->AsString          = Helper::safe_get($item, 'uom_name', 'UNIT', true);
                 $lDetail->FindField("Qty")->AsFloat           = Helper::safe_get($item, 'quantity', 0.0);
