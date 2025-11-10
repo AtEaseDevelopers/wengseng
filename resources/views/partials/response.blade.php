@@ -35,7 +35,7 @@
         </ul>
     </div>
 @endif
-@if(session('synced_orders'))
+@if(session('synced_orders')) 
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <strong>Successfully synced:</strong>
         <ul>
