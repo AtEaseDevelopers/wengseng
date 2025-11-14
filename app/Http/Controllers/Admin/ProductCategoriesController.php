@@ -61,6 +61,13 @@ class ProductCategoriesController extends Controller
 
     public function destroy($id)
     {
+        $cat_id = decrypt($id);
+        $in_use = DB::table('products')->where('product_category_id', $cat_id)->exists();
+        if ($in_use) {
+            return redirect(route('admin.product-categories.index'))->with('warning', "Product category cannot be deleted as it is being used.");
+        }
+        DB::table('product_categories')->where('id', $cat_id)->delete();
+        
         return redirect(route('admin.product-categories.index'))->with('success', "Product category has been deleted successfully.");
     }
 

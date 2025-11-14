@@ -61,6 +61,13 @@ class AreasController extends Controller
 
     public function destroy($id)
     {
+        $area_id = decrypt($id);
+        $in_use = DB::table('users')->where('area', $area_id)->exists();
+        if ($in_use) {
+            return redirect(route('admin.areas.index'))->with('warning', "Area cannot be deleted as it is being used.");
+        }
+        DB::table('areas')->where('id', $area_id)->delete();
+        
         return redirect(route('admin.areas.index'))->with('success', "Area has been deleted successfully.");
     }
 

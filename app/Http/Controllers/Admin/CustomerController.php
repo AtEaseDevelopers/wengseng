@@ -340,7 +340,7 @@ class CustomerController extends Controller
     private function validate_update_customer(Request $request, User $customer)
     {
         $rules = [
-            "name" => ['required', 'unique:users,name,'.$customer->id, 'string', 'max:100'],
+            "name" => ['required', 'string', 'max:100'],
             "email" => array_merge(User::$attribute_rules['email'], ['unique:users,email,'.$customer->id]),
             "attn_name" => array_merge(User::$attribute_rules['attn_name'], []),
             "attn_contact" => array_merge(User::$attribute_rules['attn_contact'], []),

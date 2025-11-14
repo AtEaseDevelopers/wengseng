@@ -119,6 +119,13 @@
                 },
             ]
         });
+
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('.btn-delete')) {
+                const el = event.target.closest('.btn-delete');
+                document.getElementById('delete-form').setAttribute('action', el.getAttribute('data-action'));
+            }
+        });
     </script>
 
 @endsection

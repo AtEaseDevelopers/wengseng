@@ -61,6 +61,13 @@ class UomController extends Controller
 
     public function destroy($id)
     {
+        $uom_id = decrypt($id);
+        $in_use = DB::table('products')->where('uom_id', $uom_id)->exists();
+        if ($in_use) {
+            return redirect(route('admin.uom.index'))->with('warning', "UOM cannot be deleted as it is being used.");
+        }
+        DB::table('uoms')->where('id', $uom_id)->delete();
+        
         return redirect(route('admin.uom.index'))->with('success', "UOM has been deleted successfully.");
     }
 

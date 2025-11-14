@@ -62,7 +62,7 @@ class User extends Authenticatable
     ];
 
     public static $attribute_rules = [
-        'name' => ['required', 'unique:users', 'string', 'max:100'],
+        'name' => ['required', 'string', 'max:100'],
         'email' => ['nullable', 'email', 'max:100'],
         'password' => ['required', 'string'],
         'attn_name' => ['nullable', 'string', 'max:30'],

@@ -61,6 +61,13 @@ class CustomerCategoriesController extends Controller
 
     public function destroy($id)
     {
+        $customer_category_id = decrypt($id);
+        $in_use = DB::table('users')->where('customer_category_id', $customer_category_id)->exists();
+        if ($in_use) {
+            return redirect(route('admin.customer-categories.index'))->with('warning', "Customer category cannot be deleted as it is being used.");
+        }
+        DB::table('customer_categories')->where('id', $customer_category_id)->delete();
+        
         return redirect(route('admin.customer-categories.index'))->with('success', "Customer category has been deleted successfully.");
     }
 
