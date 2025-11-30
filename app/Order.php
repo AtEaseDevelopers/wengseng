@@ -125,4 +125,32 @@ class Order extends Model
             ->get()
             ->groupBy('cart_id'); // this groups in PHP, not SQL
     }
+
+    public static function prepareSyncOrders(array $orderIds)
+    {
+        $orders = self::getOrdersWithUser($orderIds);
+        $cartIds = $orders->pluck('cart_id')->filter()->unique()->all();
+        $cartItemsMap = self::getCartItemsForOrders($cartIds);
+
+        return $orders->map(function ($order) use ($cartItemsMap) {
+            return [
+                'id' => $order->id,
+                'do_no' => $order->do_no,
+                'do_date' => $order->do_date,
+                'attn_name' => $order->attn_name,
+                'attn_contact' => $order->attn_contact,
+                'billing_address' => $order->billing_address,
+                'payment_method' => $order->payment_method,
+                'sql_sync_status' => $order->sql_sync_status,
+                'sql_sync_respond' => $order->sql_sync_respond,
+                'user_name' => $order->user_name,
+                'user_email' => $order->user_email,
+                'sql_customer_code' => $order->sql_customer_code,
+                'status' => $order->status,
+                'cart_id' => $order->cart_id,
+                'items' => $cartItemsMap[$order->cart_id] ?? [],
+            ];
+        })->keyBy('id');
+    }
+
 }
