@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Validator;
 use App\SqlSyncRecord;
 use Illuminate\Http\Request;
 use App\Order;
@@ -9,7 +10,7 @@ class SqlSyncRecordController extends Controller
 {
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'target_id'   => 'required|string',
             'action'      => 'required|string',
             'target_name' => 'required|string',
@@ -19,35 +20,56 @@ class SqlSyncRecordController extends Controller
             'response'    => 'nullable|array',
         ]);
 
-        // Find existing record with same target_id, target_name, and action
-        $record = SqlSyncRecord::where('target_id', $data['target_id'])
-            ->where('target_name', $data['target_name'])
-            ->where('action', $data['action'])
+        $data = $request->all();
+
+        if ($validator->fails()) {
+            // Get only the error messages
+            $errors = $validator->errors()->messages();
+
+            // Save the entire input as JSON string in remark
+            $data['remark'] = json_encode($data);
+
+            // Save only the error messages in response (as array)
+            $data['response'] = $errors;
+
+            // Optionally, set status to failed if validation failed
+            $data['status'] = 'failed';
+        }
+
+        $record = SqlSyncRecord::where('target_id', $data['target_id'] ?? null)
+            ->where('target_name', $data['target_name'] ?? null)
+            ->where('action', $data['action'] ?? null)
             ->first();
 
         if ($record) {
-            // Update existing record
             $record->update([
-                'status'   => $data['status'],
+                'status'   => $data['status'] ?? $record->status,
                 'response' => $data['response'] ?? $record->response,
                 'remark'   => $data['remark'] ?? $record->remark,
-                'details'  => $data['details'],
+                'details'  => $data['details'] ?? $record->details,
             ]);
         } else {
-            // Create new record if not found
-            $record = SqlSyncRecord::create($data);
+            $record = SqlSyncRecord::create([
+                'target_id'   => $data['target_id'] ?? null,
+                'action'      => $data['action'] ?? null,
+                'target_name' => $data['target_name'] ?? null,
+                'details'     => $data['details'] ?? [],
+                'status'      => $data['status'] ?? 'failed',
+                'remark'      => $data['remark'] ?? null,
+                'response'    => $data['response'] ?? null,
+            ]);
         }
 
         return response()->json(['success' => true, 'record' => $record], 201);
     }
 
 
-   public function index()
+    public function index()
     {
         // Get pending sync records only
         $records = SqlSyncRecord::where('status', 'pending')
             ->orderBy('created_at', 'desc')
-            ->take(20) // optional: limit only pending
+            ->take(env('SQL_SYNC_RECORD_LIMIT')) // optional: limit only pending
             ->get();
 
         if ($records->isEmpty()) {
