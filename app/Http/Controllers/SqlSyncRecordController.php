@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Validator;
 use App\SqlSyncRecord;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Order;
 class SqlSyncRecordController extends Controller
 {
@@ -23,44 +24,55 @@ class SqlSyncRecordController extends Controller
         $data = $request->all();
 
         if ($validator->fails()) {
-            // Get only the error messages
-            $errors = $validator->errors()->messages();
+            // Capture full input as remark
+            $data['remark'] = json_encode($request->all(), JSON_UNESCAPED_UNICODE);
 
-            // Save the entire input as JSON string in remark
-            $data['remark'] = json_encode($data);
+            // Capture only validation errors in response
+            $data['response'] = $validator->errors()->messages();
 
-            // Save only the error messages in response (as array)
-            $data['response'] = $errors;
-
-            // Optionally, set status to failed if validation failed
+            // Force failed status
             $data['status'] = 'failed';
         }
 
-        $record = SqlSyncRecord::where('target_id', $data['target_id'] ?? null)
-            ->where('target_name', $data['target_name'] ?? null)
-            ->where('action', $data['action'] ?? null)
-            ->first();
+        // Always save response JSON to be traced in orders
+        $sqlSyncRespond = json_encode($data['response'] ?? ['Empty WengSengSqlSyncAcc Respond'], JSON_UNESCAPED_UNICODE);
 
-        if ($record) {
-            $record->update([
-                'status'   => $data['status'] ?? $record->status,
-                'response' => $data['response'] ?? $record->response,
-                'remark'   => $data['remark'] ?? $record->remark,
-                'details'  => $data['details'] ?? $record->details,
+        // Process SQL Sync Record
+        $record = SqlSyncRecord::updateOrCreate(
+            [
+                'target_id'   => $data['target_id'],
+                'action'      => $data['action'],
+                'target_name' => $data['target_name']
+            ],
+            [
+                'details'     => $data['details'] ?? [],
+                'status'      => $data['status'],
+                'remark'      => $data['remark'] ?? null,
+                'response'    => $data['response'] ?? null
+            ]
+        );
+
+        // Only update order completed if sync SUCCESS
+        if ($data['status'] === 'success') {
+            DB::table('orders')->where('id', $data['target_id'])->update([
+                'status'           => 'completed',
+                'do_no'            => $data['target_name'],
+                'sql_sync_status'  => strtoupper($data['status']),
+                'sql_sync_respond' => $sqlSyncRespond,
+                'updated_at'       => now(),
             ]);
         } else {
-            $record = SqlSyncRecord::create([
-                'target_id'   => $data['target_id'] ?? null,
-                'action'      => $data['action'] ?? null,
-                'target_name' => $data['target_name'] ?? null,
-                'details'     => $data['details'] ?? [],
-                'status'      => $data['status'] ?? 'failed',
-                'remark'      => $data['remark'] ?? null,
-                'response'    => $data['response'] ?? null,
+            DB::table('orders')->where('id', $data['target_id'])->update([
+                'sql_sync_status'  => strtoupper($data['status']) ?? 'FAILED',
+                'sql_sync_respond' => $sqlSyncRespond,
+                'updated_at'       => now(),
             ]);
         }
 
-        return response()->json(['success' => true, 'record' => $record], 201);
+        return response()->json([
+            'success' => true,
+            'record' => $record
+        ], 201);
     }
 
 
