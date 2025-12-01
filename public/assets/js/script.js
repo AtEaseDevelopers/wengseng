@@ -721,7 +721,12 @@ document.addEventListener('click', function(event) {
             })
             .then(res => res.json())
             .then(data => {
-                let textToCopy = `${data.category_name} (${data.date})\n\n`;
+                // Format date as DD/MM/YYYY for WhatsApp
+                const dateParts = data.date.split('-');
+                const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                let textToCopy = `${data.category_name}\n`;
+                textToCopy += `Delivery Date: ${formattedDate}\n\n`;
 
                 for (const [catName, products] of Object.entries(data.products)) {
                     textToCopy += catName + "\n";

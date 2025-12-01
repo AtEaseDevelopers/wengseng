@@ -126,7 +126,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
                     ->when($this->request->fdate, function ($q) {
                         $q->whereDate('orders.delivering_date', $this->request->fdate);
                     })
-                    ->sum(DB::raw('COALESCE(order_products.quantity, 0) + COALESCE(order_products.weight, 0)'));
+                    ->sum(DB::raw('COALESCE(order_products.quantity, 0)'));
 
                 $qty = $qty ?: 0;
                 $row[$userKey] = $qty;

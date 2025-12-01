@@ -188,6 +188,7 @@ Route::namespace('Admin')->middleware(['admin_bootstrap'])->prefix('admin')->gro
                         Route::post('/update-order-products-weight', 'update_order_products_weight')->name('update-order-products-weight');
                         Route::get('/download_do_zip', 'download_do_zip');
                         Route::post('/sync-invoice', 'sync_invoice')->name('sync-invoice');
+                        Route::get('/order/duplicate/{order}', 'duplicate')->name('orders.duplicate');
                     }
                 );
 

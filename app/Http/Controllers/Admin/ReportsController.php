@@ -406,6 +406,7 @@ class ReportsController extends Controller
                 'order_products.product_id',
                 'order_products.product_name',
                 'users.name as user_name',
+                'users.sql_customer_code',
                 // DB::raw('SUM(order_products.quantity) as quantity'),
                 'order_products.quantity as quantity',
                 'uoms.uom_name',

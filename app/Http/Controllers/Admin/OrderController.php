@@ -245,8 +245,10 @@ class OrderController extends Controller
                 $quantity = $data['quantity'][$key];
                 $qtyWeight = $quantity;
             } else {
-                $weight = $data['quantity'][$key];
-                $qtyWeight = $weight;
+                if (isset($data['weight'])) {
+                    $weight = $data['weight'][$key];
+                    $qtyWeight = $weight;
+                }
             }
 
             $unit_price = $product->price;
@@ -436,8 +438,10 @@ class OrderController extends Controller
                  $quantity = $data['quantity'][$key];
                  $qtyWeight = $quantity;
             } else {
-                 $weight = $data['weight'][$key];
-                 $qtyWeight = $weight;
+                if (isset($data['weight'])) {
+                    $weight = $data['weight'][$key];
+                    $qtyWeight = $weight;
+                }
             }
            
             $unit_price = $product->category_price ?? $product->price;
@@ -793,6 +797,102 @@ class OrderController extends Controller
                 'drivers' => $drivers_arr,
             ]
         );
+    }
+
+    public function duplicate($id)
+    {
+        $originalOrder = Order::find($id);
+        if (!$originalOrder) {
+            return redirect()->back()->with('error', 'Order not found.');
+        }
+
+        $user = User::find($originalOrder->user_id);
+        $today = date('Y-m-d');
+        $total = 0;
+
+        // Create new order with today's date
+        $newOrder = Order::create([
+            'user_id' => $originalOrder->user_id,
+            'total_price' => 0,
+            'attn_name' => $originalOrder->attn_name,
+            'attn_contact' => $originalOrder->attn_contact,
+            'payment_method' => $originalOrder->payment_method,
+            'pricing_date' => $today,
+            'delivering_date' => $today,
+            'area' => $originalOrder->area,
+            'billing_address' => $originalOrder->billing_address,
+            'billing_city' => $originalOrder->billing_city,
+            'billing_postcode' => $originalOrder->billing_postcode,
+            'billing_state' => $originalOrder->billing_state,
+            'shipping_address' => $originalOrder->shipping_address,
+            'shipping_city' => $originalOrder->shipping_city,
+            'shipping_postcode' => $originalOrder->shipping_postcode,
+            'shipping_state' => $originalOrder->shipping_state,
+            'status' => 'processing',
+            'driver_id' => $originalOrder->driver_id,
+        ]);
+
+        // Get original order products
+        $originalProducts = OrderProduct::where('order_id', $originalOrder->id)
+            ->where('status', OrderProduct::$status['active'])
+            ->get();
+
+        $order_weight = 0;
+
+        foreach ($originalProducts as $originalProduct) {
+            $product = Product::find($originalProduct->product_id);
+            if (!$product || $product->status !== Product::$status['active']) {
+                continue; // Skip inactive products
+            }
+
+            // Get today's price using existing method
+            $unit_price = Product::get_today_price($product->id, $user);
+
+            $qtyWeight = $originalProduct->quantity ?? $originalProduct->weight ?? 0;
+            $price = $unit_price * $qtyWeight;
+
+            $newOrderProduct = OrderProduct::create([
+                'order_id' => $newOrder->id,
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'quantity' => $originalProduct->quantity,
+                'weight' => $originalProduct->weight,
+                'unit_price' => $unit_price,
+                'price' => $price,
+                'remark' => $originalProduct->remark,
+                'nos' => $originalProduct->nos,
+                'status' => OrderProduct::$status['active'],
+            ]);
+
+            $order_weight += ($product->weight == '' ? 0 : $product->weight * ($originalProduct->quantity ?? 0));
+
+            // Copy product options
+            $originalOptions = OrderProductOption::where('order_product_id', $originalProduct->id)
+                ->where('status', OrderProductOption::$status['active'])
+                ->get();
+
+            foreach ($originalOptions as $option) {
+                OrderProductOption::create([
+                    'order_product_id' => $newOrderProduct->id,
+                    'option' => $option->option,
+                    'option_item' => $option->option_item,
+                    'status' => OrderProductOption::$status['active'],
+                ]);
+            }
+
+            $total += $price;
+        }
+
+        // Update order totals
+        $newOrder->update([
+            'total_price' => $total,
+            'order_weight' => $order_weight,
+        ]);
+
+        // Generate DO number
+        $this->generateDoNumber($newOrder);
+
+        return redirect(route('admin.orders.edit', encrypt($newOrder->id)))->with('success', 'Order has been duplicated! Please review and save.');
     }
 
     public function export(Request $request)

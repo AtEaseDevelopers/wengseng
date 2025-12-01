@@ -23,6 +23,11 @@
                                 @endif
                             </li>
                             <li>
+                                <a href="{{ route('admin.orders.duplicate', $order->id) }}" class="dropdown-item">
+                                    Duplicate Order
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ route('admin.order.invoice', $order->id) }}#toolbar=0"
                                 data-url="{{ route('admin.order.invoice', $order->id) }}"
                                 class="dropdown-item view-pdf">

@@ -90,8 +90,14 @@
                             <tbody>
                                 @foreach($products as $index => $product)
                                     <tr>
-                                        <td colspan="3">
+                                        <td colspan="2">
                                             <b>{{ $index + 1 }}. {{ $product->name }}{{ $product->sku? " (SKU: $product->sku)" : "" }}</b>
+                                        </td>
+                                        <td>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control apply-all-price" data-product-id="{{ $product->id }}" placeholder="Set all prices">
+                                                <button type="button" class="btn btn-outline-primary apply-all-btn" data-product-id="{{ $product->id }}">Apply</button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>
@@ -107,7 +113,7 @@
                                             <input type="number" step="0.01" class="form-control" value="{{ $product->price }}" readonly>
                                         </td>
                                         <td>
-                                            <input type="number" step="0.01" class="form-control" name="price[{{ $product->id }}][0]" id="price" value="{{ $product_daily_price[$product->id][0] ?? $product->price }}" placeholder="Enter price" required>
+                                            <input type="number" step="0.01" class="form-control product-price-input" data-product-id="{{ $product->id }}" name="price[{{ $product->id }}][0]" id="price" value="{{ $product_daily_price[$product->id][0] ?? $product->price }}" placeholder="Enter price" required>
                                         </td>
                                     </tr>
                                     @foreach($categories as $key => $category)
@@ -119,7 +125,7 @@
                                                 <input type="number" step="0.01" class="form-control" value="{{ $product->price }}" readonly>
                                             </td>
                                             <td>
-                                                <input type="number" step="0.01" class="form-control" name="price[{{ $product->id }}][{{ $category->id }}]" id="price_{{ $key }}" value="{{ $product_daily_price[$product->id][$category->id] ?? $product->price }}" placeholder="Enter price" required>
+                                                <input type="number" step="0.01" class="form-control product-price-input" data-product-id="{{ $product->id }}" name="price[{{ $product->id }}][{{ $category->id }}]" id="price_{{ $key }}" value="{{ $product_daily_price[$product->id][$category->id] ?? $product->price }}" placeholder="Enter price" required>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -199,6 +205,34 @@
             
             $("[name=sort_by]").change(function(){
                 $("#searchProd").submit();
+            });
+
+            $(".apply-all-btn").click(function(){
+                var productId = $(this).data('product-id');
+                var applyPrice = $(".apply-all-price[data-product-id='" + productId + "']").val();
+
+                if(applyPrice === '' || applyPrice === null){
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Please enter a price to apply.',
+                        icon: 'error',
+                        timer: 2000
+                    });
+                    return;
+                }
+
+                // Set all price inputs for this product to the entered value
+                $(".product-price-input[data-product-id='" + productId + "']").val(applyPrice);
+
+                // Clear the apply-all input after applying
+                $(".apply-all-price[data-product-id='" + productId + "']").val('');
+
+                Swal.fire({
+                    title: 'Applied',
+                    text: 'Price applied to all categories.',
+                    icon: 'success',
+                    timer: 1500
+                });
             });
         });
     </script>

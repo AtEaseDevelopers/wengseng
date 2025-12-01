@@ -43,8 +43,8 @@
                                 <div class="form-group mb-4">
                                     <label class="mb-2" for="fdate">Date Range</label>
                                     <div class="d-flex">
-                                        <input type="date" class="form-control mb-1 me-2" name="fdate" id="fdate" value="{{ $req['fdate'] }}">
-                                        <input type="date" class="form-control mb-1" name="tdate" id="tdate" value="{{ $req['tdate'] }}">
+                                        <input type="date" class="form-control mb-1 me-2" name="fdate" id="fdate" value="{{ $req['fdate'] ?? date('Y-m-d') }}">
+                                        <input type="date" class="form-control mb-1" name="tdate" id="tdate" value="{{ $req['tdate'] ?? date('Y-m-d') }}">
                                     </div>
                                 </div>
                             </div>
@@ -128,7 +128,7 @@
                                             @endphp
                                             <tr>
                                                 <td colspan="2"></td>
-                                                <td id="{{ $product->order_product_id }}-u">{{ $product->user_name }}</td>
+                                                <td id="{{ $product->order_product_id }}-u">{{ $product->sql_customer_code ?? $product->user_name }}</td>
                                                 <td align="right">
                                                     @if ($product->status != 'completed')
                                                         <button type="button" class="btn btn-sm btn-outline-primary btn-e-stock-quantity" data-bs-toggle="modal" data-bs-target="#edit-qty" data-id="{{ $product->order_product_id }}" data-qty="{{ $product->quantity }}" data-sno="{{ $sno }}" data-product="{{ $product_name }}">
