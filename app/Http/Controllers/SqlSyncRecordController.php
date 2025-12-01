@@ -12,10 +12,10 @@ class SqlSyncRecordController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'target_id'   => 'required|string',
+            'target_id'   => 'required',
             'action'      => 'required|string',
             'target_name' => 'required|string',
-            'details'     => 'required|array',
+            'details'     => 'nullable|string',
             'status'      => 'required|in:pending,success,failed',
             'remark'      => 'nullable|string',
             'response'    => 'nullable|array',
