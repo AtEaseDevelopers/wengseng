@@ -238,6 +238,9 @@
                                                             </a>
                                                         </li>
                                                     @endif
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ route('admin.orders.duplicate', $order->id) }}">Duplicate Order</a>
+                                                    </li>
                                                 </ul>
                                             </div>
                                         </td>

@@ -808,6 +808,7 @@ class OrderController extends Controller
 
         $user = User::find($originalOrder->user_id);
         $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
         $total = 0;
 
         // Create new order with today's date
@@ -818,7 +819,7 @@ class OrderController extends Controller
             'attn_contact' => $originalOrder->attn_contact,
             'payment_method' => $originalOrder->payment_method,
             'pricing_date' => $today,
-            'delivering_date' => $today,
+            'delivering_date' => $tomorrow,
             'area' => $originalOrder->area,
             'billing_address' => $originalOrder->billing_address,
             'billing_city' => $originalOrder->billing_city,

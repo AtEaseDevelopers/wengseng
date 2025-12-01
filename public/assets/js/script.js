@@ -674,9 +674,20 @@ document.addEventListener('click', function(event) {
 
         // Main heading + date
         const title = box.querySelector("h5")?.innerText || "";
-        const date = box.querySelector("span")?.innerText || "";
+        const dateRaw = box.querySelector("span")?.innerText || "";
 
-        let textToCopy = `${title} ${date}\n\n`;
+        // Format date for delivery date (extract date, add 1 day, format as DD/MM/YYYY)
+        const dateMatch = dateRaw.match(/(\d{4})-(\d{2})-(\d{2})/);
+        let formattedDate = dateRaw;
+        if (dateMatch) {
+            const deliveryDate = new Date(dateMatch[1], dateMatch[2] - 1, parseInt(dateMatch[3]) + 1);
+            const dd = String(deliveryDate.getDate()).padStart(2, '0');
+            const mm = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = deliveryDate.getFullYear();
+            formattedDate = `${yyyy}-${mm}-${dd}`;
+        }
+
+        let textToCopy = `${title} (${data.date})\nDelivery Date: ${formattedDate}\n\n`;
 
         // Loop through each category (h6) and its products (li)
         box.querySelectorAll(".category-title").forEach(category => {
@@ -721,11 +732,15 @@ document.addEventListener('click', function(event) {
             })
             .then(res => res.json())
             .then(data => {
-                // Format date as DD/MM/YYYY for WhatsApp
+                // Add 1 day to the date for delivery date
                 const dateParts = data.date.split('-');
-                const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                const deliveryDate = new Date(dateParts[0], dateParts[1] - 1, parseInt(dateParts[2]) + 1);
+                const dd = String(deliveryDate.getDate()).padStart(2, '0');
+                const mm = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+                const yyyy = deliveryDate.getFullYear();
+                const formattedDate = `${yyyy}-${mm}-${dd}`;
 
-                let textToCopy = `${data.category_name}\n`;
+                let textToCopy = `${data.category_name} (${data.date})\n`;
                 textToCopy += `Delivery Date: ${formattedDate}\n\n`;
 
                 for (const [catName, products] of Object.entries(data.products)) {

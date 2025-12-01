@@ -35,7 +35,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
             })
             ->when($this->request->status, fn($q) => $q->where('orders.status', $this->request->status))
             ->where('orders.status', '!=', 'cancelled')
-            ->when($this->request->fdate, fn($q) => $q->whereDate('orders.delivering_date', $this->request->fdate))
+            ->when($this->request->fdate, fn($q) => $q->whereDate('orders.pricing_date', $this->request->fdate))
             ->select(
                 'products.id',
                 'products.name',
