@@ -18,7 +18,7 @@ class CreateSqlSyncRecordsTable extends Migration
             $table->text('details')->nullable();         // request body + headers
             $table->text('response')->nullable();        // SDK / SQL Accounting response
 
-            $table->enum('status', ['pending', 'success', 'failed'])
+            $table->enum('status', ['pending', 'success', 'failed', 'expired'])
                 ->default('pending');
 
             $table->string('remark')->nullable();
