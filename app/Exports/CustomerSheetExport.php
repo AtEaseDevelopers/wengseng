@@ -72,16 +72,24 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
 
                 if ($qty <= 0) continue;
 
+                // Get daily price for this product
+                $dailyPrice = DB::table('product_daily_prices')
+                    ->where('product_id', $product->id)
+                    ->where('date', $this->request->fdate)
+                    ->where('user_category', $this->user->category)
+                    ->where('status', 'active')
+                    ->value('price') ?? $product->unit_price;
+
                 $displayQty = $product->quantity ?? $product->weight ?? 0;
                 $total_qty += $displayQty;
-                $total_price += $product->price;
+                $total_price += $dailyPrice * $displayQty;
 
                 $rows[] = [
                     $product->name,
                     $product->uom_name,
                     $displayQty,
                     '',
-                    $product->unit_price,
+                    $dailyPrice,
                     '',
                 ];
             }
