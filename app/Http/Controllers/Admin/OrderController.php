@@ -47,6 +47,7 @@ class OrderController extends Controller
             ->select(
                 "users.id as customer_id",
                 "users.name as customer_name",
+                "users.sql_customer_code",
                 "orders.id",
                 "orders.status",
                 "orders.billing_address",

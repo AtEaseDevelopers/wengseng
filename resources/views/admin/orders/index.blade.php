@@ -250,7 +250,7 @@
                                         <td>{{ $order->delivering_date }}</td>
                                         <td>
                                             <a href="{{ route('admin.customers.edit', encrypt($order->customer_id)) }}" class="text-dark" target="_blank">
-                                                {{ $order->customer_name }}
+                                                {{ $order->sql_customer_code ?? $order->customer_name }}
                                             </a>
                                         </td>
                                         <td class="white-space-nowrap">{!! $order->products !!}</td>
