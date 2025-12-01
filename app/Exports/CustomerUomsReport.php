@@ -60,7 +60,7 @@ class CustomerUomsReport implements WithMultipleSheets
                 $q->where('orders.status', $this->request->status);
             })
             ->when($this->request->fdate, function ($q) {
-                $q->whereDate('orders.delivering_date', $this->request->fdate);
+                $q->whereDate('orders.created_at', $this->request->fdate);
             })
             ->select('users.id', 'users.sql_customer_code', 'users.name')
             ->whereNotNull('users.sql_customer_code')
