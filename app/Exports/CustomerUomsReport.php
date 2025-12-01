@@ -41,6 +41,9 @@ class CustomerUomsReport implements WithMultipleSheets
 
         if ($categories->count() > 0) {
             foreach ($categories as $category) {
+                if ($category->category_name == 'IMPORT') {
+                    continue;
+                }
                 $sheets[] = new ProductCategoriesSheetExport($category, $this->request);
             }
         }

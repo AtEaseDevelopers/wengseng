@@ -103,7 +103,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
         $new_category = [];
         foreach ($products as $product) {
             $balance_qty = DB::table('product_balance_quantities')->where('product_id', $product->id)->where('date', $this->request->fdate)->value('qty') ?? 0;
-            $row = ['Product' => $product->name, 'Balance' => $balance_qty, 'UOM' => $product->uom_name];
+            $row = ['Product' => $product->name, 'Balance' => $balance_qty];
             $productTotal = 0;
             $hasData = false;
             
@@ -129,7 +129,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
                     ->sum(DB::raw('COALESCE(order_products.quantity, 0)'));
 
                 $qty = $qty ?: 0;
-                $row[$userKey] = $qty;
+                // $row[$userKey] = $qty;
 
                 if ($qty > 0) {
                     $hasData = true;
@@ -140,18 +140,17 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             }
 
             if ($hasData) {
-                $row['Total'] = $productTotal;
+                // $row['Total'] = $productTotal;
                 $rows[] = $row;
             }
         }
-
         if (count($rows) > 0) {
-            $totalsRow = ['Product' => 'Total', 'Balance' => '', 'UOM' => ''];
-            foreach ($this->users as $user) {
-                $userKey = $user->sql_customer_code ?? $user->name;
-                $totalsRow[$userKey] = $customerTotals[$userKey];
-            }
-            $totalsRow['Total'] = $grandTotal;
+            $totalsRow = ['Product' => 'Total', 'Balance' => ''];
+            // foreach ($this->users as $user) {
+            //     $userKey = $user->sql_customer_code ?? $user->name;
+            //     $totalsRow[$userKey] = $customerTotals[$userKey];
+            // }
+            // $totalsRow['Total'] = $grandTotal;
             $rows[] = $totalsRow;
         }
 
@@ -160,12 +159,12 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
 
     public function headings(): array
     {
-        $userCodes = array_map(fn($u) => $u->sql_customer_code ?? $u->name, $this->users->toArray());
+        // $userCodes = array_map(fn($u) => $u->sql_customer_code ?? $u->name, $this->users->toArray());
         
         return [
             ['Date', '', $this->request->fdate, ''],
             ['', '', '', ''],
-            array_merge(['Product', 'Balance', 'UOM'], $userCodes, ['Total']),
+            array_merge(['Product', 'Balance']),
         ];
     }
 
