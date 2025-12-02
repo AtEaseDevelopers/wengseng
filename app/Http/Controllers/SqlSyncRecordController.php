@@ -38,26 +38,26 @@ class SqlSyncRecordController extends Controller
         $sqlSyncRespond = json_encode($data['response'] ?? ['Empty WengSengSqlSyncAcc Respond'], JSON_UNESCAPED_UNICODE);
 
         // Process SQL Sync Record
-       $record = SqlSyncRecord::logSyncResult($data);
+        $record = SqlSyncRecord::logSyncResult($data);
 
-        // Only update order completed if sync SUCCESS
-        if ($data['status'] === 'success') {
-            if ($sqlSyncRespond[$data['target_id']]['status'] == 'success'){
-                    DB::table('orders')->where('id', $data['target_id'])->update([
-                    'status'           => 'completed',
-                    'do_no'            => $data['target_name'],
-                    'sql_sync_status'  => strtoupper($data['status']),
-                    'sql_sync_respond' => $sqlSyncRespond,
-                    'updated_at'       => now(),
-                ]);
-            }
-        } else {
-            DB::table('orders')->where('id', $data['target_id'])->update([
-                'sql_sync_status'  => strtoupper($data['status']) ?? 'FAILED',
-                'sql_sync_respond' => $sqlSyncRespond,
-                'updated_at'       => now(),
-            ]);
+        $response = $sqlSyncRespond[$data['target_id']] ?? [];
+        $isSuccess = ($data['status'] ?? '') === 'success'
+            && ($response['status'] ?? '') === 'success';
+
+        $update = [
+            'sql_sync_status'  => strtoupper($data['status'] ?? 'FAILED'),
+            'sql_sync_respond' => json_encode($sqlSyncRespond),
+            'updated_at'       => now(),
+        ];
+
+        if ($isSuccess) {
+            $update['status'] = 'completed';
+            $update['do_no']  = $response['do_no'] ?? $data['target_name'] ?? null;
         }
+
+        DB::table('orders')
+            ->where('id', $data['target_id'])
+            ->update($update);
 
         return response()->json([
             'success' => true,
