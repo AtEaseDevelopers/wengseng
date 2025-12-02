@@ -7,19 +7,19 @@
 @endsection
 @section('content')
 
-    <form method="POST" action="{{ route('admin.orders.update', encrypt($order->id)) }}" enctype="multipart/form-data" class="form-wrapper">
+    <form method="POST" action="{{ route('admin.orders.update', encrypt($order->id)) }}" enctype="multipart/form-data" class="form-wrapper" id="order-form">
         @csrf
         @method('PUT')
         <input type="hidden" id="order_id" name="order_id" value="{{ encrypt($order->id) }}" />
         <input type="hidden" id="customer_id" name="customer_id" value="{{ encrypt($order->user_id) }}" />
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-12">
                 @if ($errors->has('date'))
                     <span class="text-danger" role="alert">
                         <strong>{{ $errors->first('date') }}</strong>
                     </span>
                 @endif
-                <div class="card shadow no-border">
+                <div class="card shadow no-border mb-4">
                     <div class="card-body">
                         <h5 class="mb-4">Customer Details</h5>
                     
@@ -122,45 +122,105 @@
                             </div>
                         </div>
 
-                        <div class="mb-4 d-none" id="add-product-info">
-                            <button type="button" class="btn btn-outline-primary mb-4" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                                <i class="fa fa-plus" aria-hidden="true"></i> Add Products
-                            </button>
-                            <div class="alert alert-info">Please add products to this order.</div>
-                        </div>
+                    </div>
+                </div>
 
-                        <div class="row mb-2">
-                            <div class="col-md-12">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                    <div>
-                                        <button type="button" class="btn btn-outline-primary px-5 disabled" disabled>
-                                            Grand Total: RM <span id="total-price">0.00</span>
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <a href="{{ route('admin.orders') }}" class="btn btn-outline-secondary me-1">Back</a>
-                                        <button type="submit" class="btns-order-action back d-none btn btn-outline-primary me-1">Back To Previous Step</button>
-                                        <button type="submit" class="btns-order-action next btn btn-outline-primary">Next Step</button>
-                                    </div>
-                                </div>
+                <!-- Order Products Section -->
+                <div class="card shadow no-border mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Order Products</h5>
+                            <div>
+                                <button type="button" class="btn btn-warning" id="btn-add-line">
+                                    <i class="fa fa-plus"></i> Add Line
+                                </button>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="products-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Product</th>
+                                        <th style="width: 10%;">Quantity</th>
+                                        <th style="width: 10%;">UOM</th>
+                                        <th style="width: 12%;">Price</th>
+                                        <th style="width: 13%;">Total</th>
+                                        <th style="width: 20%;">Remark</th>
+                                        <th style="width: 5%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-tbody">
+                                    @foreach($products as $index => $product)
+                                    <tr class="product-row" data-price="{{ $product->unit_price }}" data-total="{{ $product->unit_price * ($product->quantity ?? $product->weight ?? 0) }}">
+                                        <td>
+                                            <select class="form-select product-select" name="product_id[]">
+                                                <option value="">Choose product</option>
+                                                <option value="{{ $product->product_id }}" selected>{{ $product->product_name }}</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0" value="{{ $product->quantity ?? $product->weight ?? 0 }}">
+                                        </td>
+                                        <td class="uom-cell">{{ $product->uom_name ?? '' }}</td>
+                                        <td class="price-cell">RM {{ number_format($product->unit_price, 2) }}</td>
+                                        <td class="total-cell"><strong>RM {{ number_format($product->unit_price * ($product->quantity ?? $product->weight ?? 0), 2) }}</strong></td>
+                                        <td>
+                                            <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks" value="{{ $product->remark ?? '' }}">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                    @for($i = count($products); $i < 50; $i++)
+                                    <tr class="product-row">
+                                        <td>
+                                            <select class="form-select product-select" name="product_id[]">
+                                                <option value="">Choose product</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0">
+                                        </td>
+                                        <td class="uom-cell"></td>
+                                        <td class="price-cell">RM 0</td>
+                                        <td class="total-cell"><strong>RM 0.00</strong></td>
+                                        <td>
+                                            <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @endfor
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="card shadow no-border mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Grand Total: RM <span id="total-price">0.00</span></strong>
+                            </div>
+                            <div>
+                                <a href="{{ route('admin.orders') }}" class="btn btn-secondary me-2">Back</a>
+                                <button type="submit" class="btn btn-primary">Update Order</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card shadow no-border mb-0">
-                    <div class="card-body">
-                        <h5>Order Products</h5>
-                        <hr>
-                        <div id="product_bag-item"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </form>
-
-    @include('admin.includes.add_products_modal')
 
 @endsection
 @section('script')
@@ -168,23 +228,34 @@
     <script src="{{ asset('assets/js/sweetalert.min.js') }}"></script>
     <script src="{{ asset('assets/js/select2.min.js') }}"></script>
     <script>
-        var step = 'customer_info';
         var payment_method_options = {!! json_encode($payment_method_options) !!};
-        var selected_products = {!! json_encode($products) !!};        
-        const productIds = selected_products.map(product => product.product_id);
-        var order_text = 'Update Order';
-        var order_subtext = 'Confirm to update this order? Kindly double check on the order.';
-        
-        document.addEventListener('DOMContentLoaded', function () {
-            display_selected_products();
+        var allProducts = {!! json_encode($all_products) !!};
+        var existingProducts = {!! json_encode($products) !!};
+        var productsData = {};
 
-            const customerSelect = document.getElementById('order_customer');
-            if (customerSelect) {
-                customerSelect.disabled = true;
-                document.querySelector('select#order_customer').dispatchEvent(new Event('change', { 'bubbles': true }));
-                document.getElementById('addProductModal').dispatchEvent(new Event('shown.bs.modal', { 'bubbles': true }));
+        // Build productsData lookup object from all products
+        allProducts.forEach(function(p) {
+            productsData[p.id] = p;
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Populate payment methods
+            if (payment_method_options) {
+                var $paymentSelect = $('#payment_method');
+                var selectedMethod = $paymentSelect.data('selected');
+                $.each(payment_method_options, function(key, value) {
+                    var selected = (key === selectedMethod) ? ' selected' : '';
+                    $paymentSelect.append('<option value="' + key + '"' + selected + '>' + value + '</option>');
+                });
+                $paymentSelect.trigger('change');
+
+                // Show transfer slip if bank transfer selected
+                if (selectedMethod === 'bank-transfer') {
+                    $('#transferSlipGroup').css('display', 'block');
+                }
             }
         });
+
         $(document).ready(function() {
             $('#payment_method').select2({
                 placeholder: 'Select a payment method'
@@ -193,7 +264,163 @@
             $('#area').select2({
                 placeholder: 'Select an area'
             });
+
+            $('#payment_method').on('change', function() {
+                let val = $(this).val();
+                if (val == 'bank-transfer') {
+                    $('#transferSlipGroup').css('display', 'block');
+                } else {
+                    $('#transferSlipGroup').css('display', 'none');
+                }
+            });
+
+            // Initialize Select2 on all product dropdowns
+            initAllProductSelect2();
+
+            // Calculate initial grand total
+            calculateGrandTotal();
+
+            // Add Line button
+            $('#btn-add-line').on('click', function() {
+                addProductRow();
+            });
+
+            // Remove row button (delegated)
+            $(document).on('click', '.btn-remove-row', function() {
+                clearProductRow($(this).closest('tr'));
+            });
+
+            // Quantity change handler (delegated)
+            $(document).on('change keyup', '.quantity-input', function() {
+                calculateRowTotal($(this).closest('tr'));
+                calculateGrandTotal();
+            });
+
+            // Product select change handler (delegated)
+            $(document).on('change', '.product-select', function() {
+                onProductSelect($(this).closest('tr'));
+            });
+
+            // Form submission - filter out empty rows
+            $('#order-form').on('submit', function(e) {
+                $('.product-row').each(function() {
+                    var productId = $(this).find('.product-select').val();
+                    if (!productId) {
+                        $(this).find('select, input').attr('disabled', true);
+                    }
+                });
+            });
         });
+
+        function initAllProductSelect2() {
+            $('.product-select').each(function() {
+                if (!$(this).hasClass('select2-hidden-accessible')) {
+                    initProductSelect2($(this));
+                }
+            });
+        }
+
+        function initProductSelect2($select) {
+            // Prepare data for Select2
+            var selectData = allProducts.map(function(product) {
+                return {
+                    id: product.id,
+                    text: product.name + (product.sku ? ' (' + product.sku + ')' : '')
+                };
+            });
+
+            $select.select2({
+                placeholder: 'Choose product',
+                allowClear: true,
+                data: selectData
+            });
+        }
+
+        function onProductSelect($row) {
+            var $select = $row.find('.product-select');
+            var productId = $select.val();
+
+            if (productId && productsData[productId]) {
+                var product = productsData[productId];
+                var price = product.price || 0;
+
+                $row.find('.uom-cell').text(product.uom_name || '');
+                $row.find('.price-cell').text('RM ' + parseFloat(price).toFixed(2));
+                $row.data('price', price);
+
+                var $qty = $row.find('.quantity-input');
+                if (!$qty.val()) {
+                    $qty.val(1);
+                }
+
+                calculateRowTotal($row);
+                calculateGrandTotal();
+            } else {
+                $row.find('.uom-cell').text('');
+                $row.find('.price-cell').text('RM 0');
+                $row.find('.total-cell').html('<strong>RM 0.00</strong>');
+                $row.data('price', 0);
+                calculateGrandTotal();
+            }
+        }
+
+        function calculateRowTotal($row) {
+            var price = parseFloat($row.data('price')) || 0;
+            var qty = parseFloat($row.find('.quantity-input').val()) || 0;
+            var total = price * qty;
+            $row.find('.total-cell').html('<strong>RM ' + total.toFixed(2) + '</strong>');
+            $row.data('total', total);
+        }
+
+        function calculateGrandTotal() {
+            var grandTotal = 0;
+            $('.product-row').each(function() {
+                grandTotal += parseFloat($(this).data('total')) || 0;
+            });
+            $('#grand-total').text(grandTotal.toFixed(2));
+            $('#total-price').text(grandTotal.toFixed(2));
+        }
+
+        function addProductRow() {
+            var $newRow = $(`
+                <tr class="product-row">
+                    <td>
+                        <select class="form-select product-select" name="product_id[]">
+                            <option value="">Choose product</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0">
+                    </td>
+                    <td class="uom-cell"></td>
+                    <td class="price-cell">RM 0</td>
+                    <td class="total-cell"><strong>RM 0.00</strong></td>
+                    <td>
+                        <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+
+            $('#products-tbody').append($newRow);
+            initProductSelect2($newRow.find('.product-select'));
+        }
+
+        function clearProductRow($row) {
+            $row.find('.product-select').val(null).trigger('change');
+            $row.find('.quantity-input').val('');
+            $row.find('.remark-input').val('');
+            $row.find('.uom-cell').text('');
+            $row.find('.price-cell').text('RM 0');
+            $row.find('.total-cell').html('<strong>RM 0.00</strong>');
+            $row.data('price', 0);
+            $row.data('total', 0);
+            calculateGrandTotal();
+        }
     </script>
 
 @endsection

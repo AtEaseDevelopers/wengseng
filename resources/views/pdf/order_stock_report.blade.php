@@ -83,8 +83,9 @@
                 <thead>
                     <tr>
                         <th>No.</th>
-                        <th>Item Name</th>
-                        <th>Customer Name</th>
+                        <th>Customer Code</th>
+                        <th>Product Name</th>
+                        <th>UOM</th>
                         <th style="text-align:right;">Qty</th>
                     </tr>
                 </thead>
@@ -92,32 +93,20 @@
                     @php
                         $sno = 1;
                     @endphp
-                    @foreach ($orders as $product_name => $order_products)
+                    @foreach ($orders as $customer_code => $order_products)
                         <tr>
                             <td style="background-color:#f1f1f1;">{{ $sno++ }}</td>
-                            <td colspan="2" style="background-color:#f1f1f1; font-size:14px;">{{ $product_name }}</td>
-                            <td style="background-color:#f1f1f1; font-size:14px; font-weight: bold;" align="right">{{ $order_products[0]->uom_name }}</td>
+                            <td colspan="4" style="background-color:#f1f1f1; font-size:14px; font-weight: bold;">{{ $customer_code }}</td>
                         </tr>
-                        @php
-                            $total_quantities = 0;
-                        @endphp
                         @foreach ($order_products as $product)
-                            @php
-                                $total_quantities += $product->quantity;
-                            @endphp
                             <tr>
-                                <td colspan="2"></td>
-                                <td>{{ $product->user_name }}</td>
-                                <td align="right">{{ $product->quantity }}</td>
+                                <td></td>
+                                <td></td>
+                                <td>{{ $product->product_name }}</td>
+                                <td>{{ $product->uom_name }}</td>
+                                <td align="right">{{ $product->quantity ?? $product->weight }}</td>
                             </tr>
                         @endforeach
-                        <tr>
-                            <td colspan="3" style="text-align:right; font-size:14px;">{{ $product_name }}</td>
-                            <td style="font-weight: bold;  text-align:right; font-size:14px;">{{ number_format($total_quantities,2) }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="4"></td>
-                        </tr>
                     @endforeach
                 </tbody>
             </table>

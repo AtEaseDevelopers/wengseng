@@ -762,10 +762,8 @@ document.addEventListener('click', function(event) {
 function init_customer_details() {
     var order_customer = document.getElementById('order_customer');
     var customerInfo = document.getElementById('customer_info');
-    var submitButton = document.querySelector("form button[type=submit]");
 
-    customerInfo.classList.add('d-none');
-    submitButton.classList.add('d-none');
+    if (customerInfo) customerInfo.classList.add('d-none');
 
     if (!order_customer.value) {
         return false;
@@ -812,9 +810,11 @@ function init_customer_details() {
             fetch_customer_category_prices();
         }
 
-        customerInfo.classList.remove('d-none');
-        document.querySelector("form button.next").classList.remove('d-none');
-        document.getElementById('transferSlipGroup').style.display = 'none';
+        if (customerInfo) customerInfo.classList.remove('d-none');
+        var nextButton = document.querySelector("form button.next");
+        if (nextButton) nextButton.classList.remove('d-none');
+        var transferSlipGroup = document.getElementById('transferSlipGroup');
+        if (transferSlipGroup) transferSlipGroup.style.display = 'none';
     })
     .catch(error => {
         Swal.fire('Error', 'An error occurred.', 'error');

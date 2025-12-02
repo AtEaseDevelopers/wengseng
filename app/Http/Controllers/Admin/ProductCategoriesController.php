@@ -24,12 +24,14 @@ class ProductCategoriesController extends Controller
         $this->validate(
             $request, [
                 'category_name' => 'required',
+                'excel_sheet_batch' => 'nullable|integer',
             ]
         );
 
         ProductCategory::create(
             [
-                'category_name' => $request['category_name']
+                'category_name' => $request['category_name'],
+                'excel_sheet_batch' => $request['excel_sheet_batch'],
             ]
         );
 
@@ -47,12 +49,14 @@ class ProductCategoriesController extends Controller
         $this->validate(
             $request, [
                 'category_name' => 'required',
+                'excel_sheet_batch' => 'nullable|integer',
             ]
         );
 
         ProductCategory::where('id', decrypt($id))->update(
             [
-                'category_name' => $request['category_name']
+                'category_name' => $request['category_name'],
+                'excel_sheet_batch' => $request['excel_sheet_batch'],
             ]
         );
 
@@ -73,7 +77,7 @@ class ProductCategoriesController extends Controller
 
     public function fetch_categories(Request $request)
     {
-        $columns = array('id', 'options', 'category_name', 'total_products', 'created_at');
+        $columns = array('id', 'options', 'category_name', 'excel_sheet_batch', 'total_products', 'created_at');
         $totalRecords = DB::table('product_categories')->count();
         $totalFiltered = $totalRecords;
         if ($request->input('length') == -1) {
@@ -88,7 +92,7 @@ class ProductCategoriesController extends Controller
         if (empty($request->input('search.value'))) {
             $records = DB::table('product_categories')
                 ->select(
-                    'id', 'category_name', 'created_at',
+                    'id', 'category_name', 'excel_sheet_batch', 'created_at',
                     DB::raw('(SELECT COUNT(`id`) FROM products WHERE products.product_category_id = product_categories.id) as total_products')
                 )
                 ->offset($start)
@@ -99,7 +103,7 @@ class ProductCategoriesController extends Controller
             $search = $request->input('search.value');
             $records = DB::table('product_categories')
                 ->select(
-                    'id', 'category_name', 'created_at',
+                    'id', 'category_name', 'excel_sheet_batch', 'created_at',
                     DB::raw('(SELECT COUNT(`id`) FROM products WHERE products.product_category_id = product_categories.id) as total_products')
                 )
                 ->where('category_name', 'LIKE', "%{$search}%")
@@ -116,6 +120,7 @@ class ProductCategoriesController extends Controller
             foreach ($records as $record) {
                 $nestedData['id'] = $record->id;
                 $nestedData['category_name'] = $record->category_name;
+                $nestedData['excel_sheet_batch'] = $record->excel_sheet_batch ?? '-';
                 $nestedData['total_products'] = $record->total_products;
                 $nestedData['created_at'] = date('d-m-Y', strtotime($record->created_at));
                 $nestedData['options'] = '

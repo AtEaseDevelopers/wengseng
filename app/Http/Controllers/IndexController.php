@@ -72,9 +72,19 @@ class IndexController extends Controller
             ->get()
             ->toArray();
 
+        // Filter by search term if provided
+        $search = $request['search'];
+        if ($search) {
+            $products = array_filter($products, function($product) use ($search) {
+                return stripos($product->name, $search) !== false ||
+                       stripos($product->sku, $search) !== false;
+            });
+            $products = array_values($products);
+        }
+
         $image_path = url('/') . '/' . Product::$path . "/";
 
         $view = view('partials.products_list', compact('products', 'id', 'image_path'))->render();
-        return Response::json(['success' => true, 'view' => $view]);
+        return Response::json(['success' => true, 'view' => $view, 'products' => $products]);
     }
 }

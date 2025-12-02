@@ -102,8 +102,9 @@
                             <thead>
                                 <tr>
                                     <th>No.</th>
-                                    <th>Item Name</th>
-                                    <th>Customer Name</th>
+                                    <th>Customer Code</th>
+                                    <th>Product Name</th>
+                                    <th>UOM</th>
                                     <th style="text-align:right;">Qty</th>
                                 </tr>
                             </thead>
@@ -111,45 +112,35 @@
                                 @if (count($orders))
                                     @php
                                         $sno = 1;
-                                        $uom = "";
                                     @endphp
-                                    @foreach ($orders as $product_name => $order_products)
+                                    @foreach ($orders as $customer_code => $order_products)
                                         <tr>
                                             <td style="background-color:#f1f1f1;">{{ $sno++ }}</td>
-                                            <td colspan="2" style="background-color:#f1f1f1; font-size:14px; font-weight: bold;">{{ $product_name }}</td>
-                                            <td style="background-color:#f1f1f1; font-size:14px; font-weight: bold;  " align="right">{{ $order_products[0]->uom_name }}</td>
+                                            <td colspan="4" style="background-color:#f1f1f1; font-size:14px; font-weight: bold;">{{ $customer_code }}</td>
                                         </tr>
-                                        @php
-                                            $total_quantities = 0;
-                                        @endphp
                                         @foreach ($order_products as $product)
                                             @php
-                                                $total_quantities += $product->quantity;
+                                                $qty = $product->quantity ?? $product->weight;
                                             @endphp
                                             <tr>
-                                                <td colspan="2"></td>
-                                                <td id="{{ $product->order_product_id }}-u">{{ $product->sql_customer_code ?? $product->user_name }}</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td id="{{ $product->order_product_id }}-p">{{ $product->product_name }}</td>
+                                                <td>{{ $product->uom_name }}</td>
                                                 <td align="right">
                                                     @if ($product->status != 'completed')
-                                                        <button type="button" class="btn btn-sm btn-outline-primary btn-e-stock-quantity" data-bs-toggle="modal" data-bs-target="#edit-qty" data-id="{{ $product->order_product_id }}" data-qty="{{ $product->quantity }}" data-sno="{{ $sno }}" data-product="{{ $product_name }}">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary btn-e-stock-quantity" data-bs-toggle="modal" data-bs-target="#edit-qty" data-id="{{ $product->order_product_id }}" data-qty="{{ $qty }}" data-sno="{{ $sno }}" data-product="{{ $product->product_name }}">
                                                             <i class="fa fa-pencil"></i>
                                                         </button>
                                                     @endif
-                                                    <span class="quantities-{{ $sno }}" id="{{ $product->order_product_id }}-qty">{{ $product->quantity }}</span>
+                                                    <span class="quantities-{{ $sno }}" id="{{ $product->order_product_id }}-qty">{{ $qty }}</span>
                                                 </td>
                                             </tr>
                                         @endforeach
-                                        <tr>
-                                            <td colspan="3" style="font-weight: bold; text-align:right; font-size:14px;">{{ $product_name }}</td>
-                                            <td style="font-weight: bold; text-align:right; font-size:14px;" id="total-quantities-{{ $sno }}">{{ number_format($total_quantities,2) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td colspan="4"></td>
-                                        </tr>
                                     @endforeach
                                 @else
                                     <tr>
-                                        <td colspan="4">No record found.</td>
+                                        <td colspan="5">No record found.</td>
                                     </tr>
                                 @endif
                             </tbody>

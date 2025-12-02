@@ -41,90 +41,46 @@ class ProductBalanceController extends Controller
 
     public function create(Request $request, $date = "", $duplicate_to_date = "")
     {
-        $product_daily_price = ProductBalanceQuantity::where('date', $date)->get();
+        // Get existing balance quantities for this date
+        $existing_quantities = ProductBalanceQuantity::where('date', $date)
+            ->with('product')
+            ->get();
 
-        $formatted_product_daily_price = [];
-        foreach ($product_daily_price as $rq) {
-            $formatted_product_daily_price[$rq->product_id] = $rq->qty;
-        }
-
-        $products = Product::where('status', Product::$status['active']);
-        
-        if ($search_q = $request->input('search_q')) {
-            $products->where('name', "LIKE", "%".$search_q."%");
-            $products->orWhere('sku', "LIKE", "%".$search_q."%");
-        }
-
-        if (isset($request->sort_by)) {
-            $sort = explode('-', $request->sort_by);
-            $products->orderBy($sort[0], $sort[1]);
-        }
-                            
-        $products = $products->paginate(12);
-        $customer_categories = DB::table('customer_categories')
-            ->select('id', 'category_name')
-            ->get()
-            ->toArray();
+        // Get all active products for Select2 dropdown
+        $products = Product::where('status', Product::$status['active'])
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'sku']);
 
         return view(
             'admin.products.add-product-balance-qty-table', [
-                'duplicating' => $duplicate_to_date? true : false,
-                'duplicate_from_date' => $date? : "",
-                'setup_date' => $duplicate_to_date? : $date,
+                'duplicating' => $duplicate_to_date ? true : false,
+                'duplicate_from_date' => $date ?: "",
+                'setup_date' => $duplicate_to_date ?: $date,
                 'products' => $products,
-                'categories' => $customer_categories,
-                'product_daily_price' => $formatted_product_daily_price ?? null,
-                'clear_search_url' => config("app.url") . '/admin/product-balance-qty/add/' . $date,
+                'existing_quantities' => $existing_quantities,
             ]
         );
     }
 
     public function store_batch(Request $request, $date="")
     {
-        $data = $this->validate_daily_prices_batch($request);
-        if (isset($data['error']) && $data['error']) {
-            return redirect()->back()->withInput()->withErrors($data['field_err']);
-        }
+        $items = $request->input('items', []);
 
-        foreach ($data['price'] as $product_id => $qty) {
-            $exist = ProductBalanceQuantity::where([
+        // Delete existing quantities for this date first
+        ProductBalanceQuantity::where('date', $date)->delete();
+
+        // Insert new quantities
+        foreach ($items as $item) {
+            if (!empty($item['product_id']) && isset($item['qty']) && $item['qty'] > 0) {
+                ProductBalanceQuantity::create([
                     'date' => $date,
-                    'product_id' => $product_id,
-                ])->first();
-    
-            // if setting already existed
-            if (!empty($exist)) {
-                $exist->update([
-                    'qty' => $qty[0]
-                ]);
-            } else {
-                $product = ProductBalanceQuantity::create([
-                    'date' => $date,
-                    'product_id' => $product_id,
-                    'qty' => $qty[0],
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
                 ]);
             }
         }
 
         return back()->with('success', "Setting saved successfully.");
-    }
-
-    private function validate_daily_prices_batch(Request $request)
-    {
-        $rules = [
-            "price" => ['required', 'array'],
-        ];
-
-        try {
-            $data = $request->validate($rules);
-        } catch (ValidationException $err) {
-            return [
-                'error' => $err->getMessage(),
-                'field_err' => $err->validator->errors()->getMessages(),
-            ];
-        }
-
-        return $data;
     }
 
     // public function store(Request $request)

@@ -24,41 +24,37 @@ class OrderStockReport implements FromCollection, WithHeadings, WithEvents, With
 
                 $sno = 1;
 
-                foreach ($this->orders as $product_name => $order_products) {
+                foreach ($this->orders as $customer_code => $order_products) {
                     $no = $this->i;
-                    $total_quantities = 0;
-                    $q_no = $no; 
 
                     $sheet->setCellValue('A' . $no, $sno++);
-                    $sheet->setCellValue('B' . $no, $product_name);
+                    $sheet->setCellValue('B' . $no, $customer_code);
                     $sheet->setCellValue('C' . $no, '');
+                    $sheet->setCellValue('D' . $no, '');
+                    $sheet->setCellValue('E' . $no, '');
 
                     foreach ($order_products as $product) {
                         $this->i++;
                         $no = $this->i;
 
-                        $total_quantities += $product['quantity'];
-
                         $sheet->setCellValue('A' . $no, '');
                         $sheet->setCellValue('B' . $no, '');
-                        $sheet->setCellValue('C' . $no, $product['user_name']);
-                        $sheet->setCellValue('D' . $no, $product['quantity'] . ' ' . $order_products[0]['uom_name']);
-                        $sheet->setCellValue('E' . $no, '');
+                        $sheet->setCellValue('C' . $no, $product['product_name']);
+                        $sheet->setCellValue('D' . $no, $product['uom_name']);
+                        $sheet->setCellValue('E' . $no, $product['quantity']);
                     }
 
-                    $sheet->setCellValue('D' . $q_no, 'Total: ' . $total_quantities);
-                    $sheet->setCellValue('E' . $q_no, '');
                     $this->i++;
                 }
 
                 // Make row bold
-                $event->sheet->getDelegate()->getStyle('A1:D1')->getFont()->setBold(true);
+                $event->sheet->getDelegate()->getStyle('A1:E1')->getFont()->setBold(true);
 
                 // Set BG color
-                $event->sheet->getDelegate()->getStyle('A1:D1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('dee0bb');
+                $event->sheet->getDelegate()->getStyle('A1:E1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('dee0bb');
 
                 // Set Font color
-                $event->sheet->getDelegate()->getStyle('A1:D1')->getFont()->getColor()->setARGB('000000');
+                $event->sheet->getDelegate()->getStyle('A1:E1')->getFont()->getColor()->setARGB('000000');
             }
         ];
     }
@@ -87,7 +83,7 @@ class OrderStockReport implements FromCollection, WithHeadings, WithEvents, With
             ->leftJoin('uoms', 'uoms.id', '=', 'products.uom_id')
             ->select(
                 'order_products.product_name',
-                'users.name as user_name',
+                'users.sql_customer_code',
                 'order_products.quantity',
                 DB::raw('SUM(order_products.quantity) as quantity'),
                 'uoms.uom_name',
@@ -114,9 +110,11 @@ class OrderStockReport implements FromCollection, WithHeadings, WithEvents, With
                 }
             )
             ->where('orders.status', '!=', 'completed')
-           ->groupBy(['product_id','product_name','user_name','uoms.uom_name'])
+           ->groupBy(['product_id','product_name','users.sql_customer_code','uoms.uom_name'])
+            ->orderBy('users.sql_customer_code', 'asc')
+            ->orderBy('order_products.product_name', 'asc')
             ->get()
-            ->groupBy('product_name')
+            ->groupBy('sql_customer_code')
             ->map(function ($items) {
                 return $items->map(fn ($item) => (array) $item);
             })
@@ -130,8 +128,9 @@ class OrderStockReport implements FromCollection, WithHeadings, WithEvents, With
         return [
             [
                 'No.',
-                'Item Name',
-                'Customer Name',
+                'Customer Code',
+                'Product Name',
+                'UOM',
                 'Qty',
             ]
         ];
@@ -140,10 +139,11 @@ class OrderStockReport implements FromCollection, WithHeadings, WithEvents, With
     public function columnWidths(): array
     {
         return [
-            'A' => 20,
-            'B' => 40,
-            'C' => 70,
-            'D' => 20,
+            'A' => 10,
+            'B' => 30,
+            'C' => 40,
+            'D' => 15,
+            'E' => 15,
         ];
     }
 }

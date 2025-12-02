@@ -23,7 +23,7 @@ class CustomerUomsReport implements WithMultipleSheets
     {
         $sheets = [];
 
-        // categories that have orders
+        // categories that have orders, grouped by excel_sheet_batch
         $categories = DB::table('product_categories')
             ->join('products', 'products.product_category_id', '=', 'product_categories.id')
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
@@ -35,16 +35,25 @@ class CustomerUomsReport implements WithMultipleSheets
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
             ->where('orders.status', '!=', 'cancelled')
-            ->select('product_categories.id', 'product_categories.category_name')
+            ->where('product_categories.category_name', '!=', 'IMPORT')
+            ->select('product_categories.id', 'product_categories.category_name', 'product_categories.excel_sheet_batch')
             ->distinct()
             ->get();
 
         if ($categories->count() > 0) {
-            foreach ($categories as $category) {
-                if ($category->category_name == 'IMPORT') {
-                    continue;
+            // Group categories by excel_sheet_batch
+            $groupedCategories = $categories->groupBy('excel_sheet_batch');
+
+            foreach ($groupedCategories as $batchKey => $batchCategories) {
+                if ($batchKey === '' || $batchKey === null) {
+                    // NULL batch - individual sheets per category
+                    foreach ($batchCategories as $category) {
+                        $sheets[] = new ProductCategoriesSheetExport([$category], $this->request);
+                    }
+                } else {
+                    // Same batch - combine into one sheet
+                    $sheets[] = new ProductCategoriesSheetExport($batchCategories->values()->all(), $this->request);
                 }
-                $sheets[] = new ProductCategoriesSheetExport($category, $this->request);
             }
         }
         
@@ -62,7 +71,7 @@ class CustomerUomsReport implements WithMultipleSheets
             ->when($this->request->fdate, function ($q) {
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
-            ->select('users.id', 'users.sql_customer_code', 'users.name')
+            ->select('users.id', 'users.sql_customer_code', 'users.name', 'users.customer_category_id')
             ->whereNotNull('users.sql_customer_code')
             ->where('orders.status', '!=', 'cancelled')
             ->distinct()

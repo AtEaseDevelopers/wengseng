@@ -25,6 +25,7 @@
                                     <th>ID</th>
                                     <th>Options</th>
                                     <th>Category</th>
+                                    <th>Excel Sheet Batch</th>
                                     <th>Total Products</th>
                                     <th>Created At</th>
                                 </tr>
@@ -107,6 +108,10 @@
                 },
                 {
                     "data": "category_name",
+                    orderable: true
+                },
+                {
+                    "data": "excel_sheet_batch",
                     orderable: true
                 },
                 {

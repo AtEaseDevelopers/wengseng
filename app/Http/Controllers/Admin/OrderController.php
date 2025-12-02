@@ -143,12 +143,29 @@ class OrderController extends Controller
         foreach ($payment_method_options as $key => $value) {
             $payment_method_options[$key] = trans('user.payment_method.'.$value);
         }
-        
+
+        // Fetch all products for Select2
+        $all_products = DB::table('products')
+            ->select(
+                'products.id',
+                'products.name',
+                'products.sku',
+                'products.price',
+                'products.sell_in',
+                'uoms.uom_name',
+            )
+            ->leftJoin('uoms', 'uoms.id', 'products.uom_id')
+            ->where('status', Product::$status['active'])
+            ->orderBy('products.name', 'asc')
+            ->get()
+            ->toArray();
+
         return view('admin.orders.create', [
                 'payment_method_options' => $payment_method_options? : [],
                 'shipping_state_options' => System::$country_state['MY'],
                 'customers_list' => User::all(),
                 'areaList' => Helper::areaList(),
+                'all_products' => $all_products,
             ]
         );
     }
@@ -240,16 +257,14 @@ class OrderController extends Controller
                 ->where('id', $product_id)
                 ->first();
             
-            $qtyWeight = 0;
-            
+            $quantity = null;
+            $weight = null;
+            $qtyWeight = $data['quantity'][$key] ?? 0;
+
             if ($product->sell_in == "qty") {
-                $quantity = $data['quantity'][$key];
-                $qtyWeight = $quantity;
+                $quantity = $qtyWeight;
             } else {
-                if (isset($data['weight'])) {
-                    $weight = $data['weight'][$key];
-                    $qtyWeight = $weight;
-                }
+                $weight = $qtyWeight;
             }
 
             $unit_price = $product->price;
@@ -321,30 +336,48 @@ class OrderController extends Controller
         
         $order_products = DB::table('order_products')
             ->select(
-                'order_products.id as order_product_id', 
-                'products.id as product_id', 
-                'order_products.product_name', 
-                'order_products.quantity', 
-                'order_products.weight', 
-                'order_products.unit_price as price', 
+                'order_products.id as order_product_id',
+                'products.id as product_id',
+                'order_products.product_name',
+                'order_products.quantity',
+                'order_products.weight',
+                'order_products.unit_price',
                 'order_products.price as total_price',
                 'order_products.remark',
+                'uoms.uom_name',
             )
             ->leftJoin('orders', 'orders.id', '=', 'order_products.order_id')
             ->leftJoin('products', 'products.id', '=', 'order_products.product_id')
+            ->leftJoin('uoms', 'uoms.id', '=', 'products.uom_id')
             ->where('order_products.status', OrderProduct::$status['active'])
             ->where('orders.id', $order->id)
             ->get();
 
         $total = 0;
         foreach ($order_products as $key => $value) {
-            $total += $order_products[$key]->price * $value->quantity;
+            $total += $order_products[$key]->unit_price * $value->quantity;
             foreach (OrderProduct::getOption($value->order_product_id) as $itm_key => $itm_value) {
                 $order_products[$key]->$itm_key = $itm_value;
             }
             $order_products[$key]->remark = $value->remark? : "";
             unset($order_products[$key]->order_product_id);
         }
+
+        // Fetch all products for Select2
+        $all_products = DB::table('products')
+            ->select(
+                'products.id',
+                'products.name',
+                'products.sku',
+                'products.price',
+                'products.sell_in',
+                'uoms.uom_name',
+            )
+            ->leftJoin('uoms', 'uoms.id', 'products.uom_id')
+            ->where('status', Product::$status['active'])
+            ->orderBy('products.name', 'asc')
+            ->get()
+            ->toArray();
 
         return view('admin.orders.edit', [
                 'payment_method_options' => $payment_method_options? : [],
@@ -353,6 +386,7 @@ class OrderController extends Controller
                 'order' => $order,
                 'products' => $order_products->toArray(),
                 'areaList' => Helper::areaList(),
+                'all_products' => $all_products,
             ]
         );
     }
@@ -434,15 +468,15 @@ class OrderController extends Controller
                 ->where('id', $product_id)
                 ->first();
             
-            $qtyWeight = 0;
+            $quantity = null;
+            $weight = null;
+
             if ($product->sell_in == "qty") {
-                 $quantity = $data['quantity'][$key];
-                 $qtyWeight = $quantity;
+                $quantity = $data['quantity'][$key] ?? 0;
+                $qtyWeight = $quantity;
             } else {
-                if (isset($data['weight'])) {
-                    $weight = $data['weight'][$key];
-                    $qtyWeight = $weight;
-                }
+                $weight = $data['quantity'][$key] ?? 0;
+                $qtyWeight = $weight;
             }
            
             $unit_price = $product->category_price ?? $product->price;
@@ -810,91 +844,74 @@ class OrderController extends Controller
         $user = User::find($originalOrder->user_id);
         $today = date('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));
-        $total = 0;
-
-        // Create new order with today's date
-        $newOrder = Order::create([
-            'user_id' => $originalOrder->user_id,
-            'total_price' => 0,
-            'attn_name' => $originalOrder->attn_name,
-            'attn_contact' => $originalOrder->attn_contact,
-            'payment_method' => $originalOrder->payment_method,
-            'pricing_date' => $today,
-            'delivering_date' => $tomorrow,
-            'area' => $originalOrder->area,
-            'billing_address' => $originalOrder->billing_address,
-            'billing_city' => $originalOrder->billing_city,
-            'billing_postcode' => $originalOrder->billing_postcode,
-            'billing_state' => $originalOrder->billing_state,
-            'shipping_address' => $originalOrder->shipping_address,
-            'shipping_city' => $originalOrder->shipping_city,
-            'shipping_postcode' => $originalOrder->shipping_postcode,
-            'shipping_state' => $originalOrder->shipping_state,
-            'status' => 'processing',
-            'driver_id' => $originalOrder->driver_id,
-        ]);
 
         // Get original order products
         $originalProducts = OrderProduct::where('order_id', $originalOrder->id)
             ->where('status', OrderProduct::$status['active'])
             ->get();
 
-        $order_weight = 0;
-
-        foreach ($originalProducts as $originalProduct) {
-            $product = Product::find($originalProduct->product_id);
+        $duplicateProducts = [];
+        foreach ($originalProducts as $op) {
+            $product = Product::find($op->product_id);
             if (!$product || $product->status !== Product::$status['active']) {
                 continue; // Skip inactive products
             }
 
-            // Get today's price using existing method
+            // Get today's price
             $unit_price = Product::get_today_price($product->id, $user);
 
-            $qtyWeight = $originalProduct->quantity ?? $originalProduct->weight ?? 0;
-            $price = $unit_price * $qtyWeight;
-
-            $newOrderProduct = OrderProduct::create([
-                'order_id' => $newOrder->id,
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'quantity' => $originalProduct->quantity,
-                'weight' => $originalProduct->weight,
-                'unit_price' => $unit_price,
-                'price' => $price,
-                'remark' => $originalProduct->remark,
-                'nos' => $originalProduct->nos,
-                'status' => OrderProduct::$status['active'],
-            ]);
-
-            $order_weight += ($product->weight == '' ? 0 : $product->weight * ($originalProduct->quantity ?? 0));
-
-            // Copy product options
-            $originalOptions = OrderProductOption::where('order_product_id', $originalProduct->id)
+            // Get product options
+            $options = OrderProductOption::where('order_product_id', $op->id)
                 ->where('status', OrderProductOption::$status['active'])
                 ->get();
 
-            foreach ($originalOptions as $option) {
-                OrderProductOption::create([
-                    'order_product_id' => $newOrderProduct->id,
-                    'option' => $option->option,
-                    'option_item' => $option->option_item,
-                    'status' => OrderProductOption::$status['active'],
-                ]);
-            }
-
-            $total += $price;
+            $duplicateProducts[] = [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'quantity' => $op->quantity,
+                'weight' => $op->weight,
+                'unit_price' => $unit_price,
+                'remark' => $op->remark,
+                'nos' => $op->nos,
+                'options' => $options,
+            ];
         }
 
-        // Update order totals
-        $newOrder->update([
-            'total_price' => $total,
-            'order_weight' => $order_weight,
+        // payment_method options
+        $payment_method_options = User::$payment_method;
+        foreach ($payment_method_options as $key => $value) {
+            $payment_method_options[$key] = trans('user.payment_method.'.$value);
+        }
+
+        // Fetch all products for Select2
+        $all_products = DB::table('products')
+            ->select(
+                'products.id',
+                'products.name',
+                'products.sku',
+                'products.price',
+                'products.sell_in',
+                'uoms.uom_name',
+            )
+            ->leftJoin('uoms', 'uoms.id', 'products.uom_id')
+            ->where('status', Product::$status['active'])
+            ->orderBy('products.name', 'asc')
+            ->get()
+            ->toArray();
+
+        // Return create view with pre-filled data
+        return view('admin.orders.create', [
+            'payment_method_options' => $payment_method_options ?: [],
+            'shipping_state_options' => System::$country_state['MY'],
+            'customers_list' => User::all(),
+            'areaList' => Helper::areaList(),
+            'all_products' => $all_products,
+            'duplicate_from' => $originalOrder,
+            'duplicate_products' => $duplicateProducts,
+            'selected_customer' => $user,
+            'pricing_date' => $today,
+            'delivering_date' => $tomorrow,
         ]);
-
-        // Generate DO number
-        $this->generateDoNumber($newOrder);
-
-        return redirect(route('admin.orders.edit', encrypt($newOrder->id)))->with('success', 'Order has been duplicated! Please review and save.');
     }
 
     public function export(Request $request)

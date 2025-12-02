@@ -12,20 +12,24 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ProductCategoriesSheetExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths
 {
-    protected $category;
+    protected $categories;
     protected $request;
     protected $users;
 
-    public function __construct($category, $request)
+    public function __construct($categories, $request)
     {
-        $this->category = $category;
+        // Accept array of categories (for batch grouping) or single category (for backward compatibility)
+        $this->categories = is_array($categories) ? $categories : [$categories];
         $this->request  = $request;
+
+        // Get category IDs
+        $categoryIds = array_map(fn($cat) => $cat->id, $this->categories);
 
         $query = DB::table('users')
             ->join('orders', 'orders.user_id', '=', 'users.id')
             ->join('order_products', 'order_products.order_id', '=', 'orders.id')
             ->join('products', 'products.id', '=', 'order_products.product_id')
-            ->where('products.product_category_id', $this->category->id)
+            ->whereIn('products.product_category_id', $categoryIds)
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -47,11 +51,14 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
 
     public function collection()
     {
+        // Get category IDs
+        $categoryIds = array_map(fn($cat) => $cat->id, $this->categories);
+
         $products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
-            ->where('products.product_category_id', $this->category->id)
+            ->whereIn('products.product_category_id', $categoryIds)
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -141,7 +148,11 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
 
     public function title(): string
     {
-        $title = $this->category->category_name;
+        // Combine category names with slash for grouped categories
+        $names = array_map(fn($cat) => $cat->category_name, $this->categories);
+        $title = implode(', ', $names);
+
+        // Excel sheet names have 31 character limit
         return strlen($title) > 31 ? substr($title, 0, 28) . '...' : $title;
     }
 

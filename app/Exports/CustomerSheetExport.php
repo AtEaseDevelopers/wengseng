@@ -76,7 +76,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
                 $dailyPrice = DB::table('product_daily_prices')
                     ->where('product_id', $product->id)
                     ->where('date', $this->request->fdate)
-                    ->where('user_category', $this->user->category)
+                    ->where('user_category', $this->user->customer_category_id)
                     ->where('status', 'active')
                     ->value('price') ?? $product->unit_price;
 

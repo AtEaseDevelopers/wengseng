@@ -407,7 +407,7 @@ class ReportsController extends Controller
                 'order_products.product_name',
                 'users.name as user_name',
                 'users.sql_customer_code',
-                // DB::raw('SUM(order_products.quantity) as quantity'),
+                'order_products.weight as weight',
                 'order_products.quantity as quantity',
                 'uoms.uom_name',
             )
@@ -438,9 +438,10 @@ class ReportsController extends Controller
                 }
             )
             ->where('orders.status', 'processing')
+            ->orderBy('users.sql_customer_code', 'asc')
             ->orderBy('order_products.product_name', 'asc')
             ->get()
-            ->groupBy('product_name')
+            ->groupBy('sql_customer_code')
             ->toArray();
 
         return view('admin.reports.order_report', $data);
@@ -517,7 +518,8 @@ class ReportsController extends Controller
                     'order_products.product_id',
                     'order_products.product_name',
                     'users.name as user_name',
-                    // DB::raw('SUM(order_products.quantity) as quantity'),
+                    'users.sql_customer_code',
+                    'order_products.weight as weight',
                     'order_products.quantity as quantity',
                     'uoms.uom_name',
                 )
@@ -547,9 +549,10 @@ class ReportsController extends Controller
                         return $q->where('orders.status', '=', $request['status']);
                     }
                 )
+                ->orderBy('users.sql_customer_code', 'asc')
                 ->orderBy('order_products.product_name', 'asc')
                 ->get()
-                ->groupBy('product_name')
+                ->groupBy('sql_customer_code')
                 ->toArray();
 
             // return view('pdf.order_stock_report', $data); // working

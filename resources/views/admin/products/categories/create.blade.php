@@ -22,6 +22,15 @@
                                         </span>
                                     @enderror
                                 </div>
+                                <div class="mb-4">
+                                    <label class="mb-2" for="excel_sheet_batch">Excel Sheet Batch</label>
+                                    <input type="number" step="1" min="0" class="form-control @error('excel_sheet_batch') is-invalid @enderror" name="excel_sheet_batch" id="excel_sheet_batch" placeholder="Enter excel sheet batch number" value="{{ old('excel_sheet_batch') }}">
+                                    @error('excel_sheet_batch')
+                                        <span class="text-danger" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                                 <div class="d-flex justify-content-end">
                                     <a href="{{ route('admin.product-categories.index') }}" class="btn btn-outline-secondary me-1">Back</a>
                                     <button type="submit" class="btn btn-outline-primary">
