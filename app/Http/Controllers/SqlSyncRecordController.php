@@ -40,10 +40,7 @@ class SqlSyncRecordController extends Controller
         // Process SQL Sync Record
         $record = SqlSyncRecord::logSyncResult($data);
 
-        // Get the specific response for the target_id
         $response = $sqlSyncRespond[$data['target_id']] ?? [];
-
-        // Determine success
         $isSuccess = ($data['status'] ?? '') === 'success'
             && ($response['status'] ?? '') === 'success';
 
