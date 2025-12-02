@@ -54,4 +54,38 @@ class SqlSyncRecord extends Model
             'remark' => 'Waiting to sync queue execution',
         ]));
     }
+
+    public static function logSyncResult(array $data)
+    {
+        $query = self::where('target_id', $data['target_id'])
+            ->where('action', $data['action'])
+            ->where('target_name', $data['target_name'])
+            ->latest('id');
+
+        $record = $query->first();
+
+        if ($record) {
+            // Update latest record only
+            $record->update([
+                'status'   => $data['status'],
+                'details'  => $data['details'] ?? $record->details,
+                'remark'   => $data['remark'] ?? $record->remark,
+                'response' => $data['response'] ?? $record->response,
+            ]);
+        } else {
+            // Create new if not exist
+            $record = self::create([
+                'target_id'   => $data['target_id'],
+                'action'      => $data['action'],
+                'target_name' => $data['target_name'],
+                'details'     => $data['details'] ?? [],
+                'status'      => $data['status'],
+                'remark'      => $data['remark'] ?? null,
+                'response'    => $data['response'] ?? null,
+            ]);
+        }
+
+        return $record;
+    }
+
 }

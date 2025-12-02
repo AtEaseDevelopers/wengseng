@@ -16,7 +16,7 @@ class SqlSyncRecordController extends Controller
             'action'      => 'required|string',
             'target_name' => 'required|string',
             'details'     => 'nullable|string',
-            'status'      => 'required|in:pending,success,failed',
+            'status'      => 'required|in:pending,success,failed,expired',
             'remark'      => 'nullable|string',
             'response'    => 'nullable|array',
         ]);
@@ -38,19 +38,7 @@ class SqlSyncRecordController extends Controller
         $sqlSyncRespond = json_encode($data['response'] ?? ['Empty WengSengSqlSyncAcc Respond'], JSON_UNESCAPED_UNICODE);
 
         // Process SQL Sync Record
-        $record = SqlSyncRecord::updateOrCreate(
-            [
-                'target_id'   => $data['target_id'],
-                'action'      => $data['action'],
-                'target_name' => $data['target_name']
-            ],
-            [
-                'details'     => $data['details'] ?? [],
-                'status'      => $data['status'],
-                'remark'      => $data['remark'] ?? null,
-                'response'    => $data['response'] ?? null
-            ]
-        );
+       $record = SqlSyncRecord::logSyncResult($data);
 
         // Only update order completed if sync SUCCESS
         if ($data['status'] === 'success') {

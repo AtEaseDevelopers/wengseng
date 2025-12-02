@@ -1164,6 +1164,10 @@ class OrderController extends Controller
                         'target_name' => $order['do_no'],
                         'details'     => $order,
                     ]);
+                    DB::table('orders')->where('id', $order['id'])->update([
+                        'sql_sync_status'  => 'PENDING',
+                        'updated_at'       => now(),
+                    ]);
 
                     $syncedOrders[$id] = "Sync job queued";
 
