@@ -42,13 +42,15 @@ class SqlSyncRecordController extends Controller
 
         // Only update order completed if sync SUCCESS
         if ($data['status'] === 'success') {
-            DB::table('orders')->where('id', $data['target_id'])->update([
-                'status'           => 'completed',
-                'do_no'            => $data['target_name'],
-                'sql_sync_status'  => strtoupper($data['status']),
-                'sql_sync_respond' => $sqlSyncRespond,
-                'updated_at'       => now(),
-            ]);
+            if ($sqlSyncRespond[$data['target_id']]['status'] == 'success'){
+                    DB::table('orders')->where('id', $data['target_id'])->update([
+                    'status'           => 'completed',
+                    'do_no'            => $data['target_name'],
+                    'sql_sync_status'  => strtoupper($data['status']),
+                    'sql_sync_respond' => $sqlSyncRespond,
+                    'updated_at'       => now(),
+                ]);
+            }
         } else {
             DB::table('orders')->where('id', $data['target_id'])->update([
                 'sql_sync_status'  => strtoupper($data['status']) ?? 'FAILED',
