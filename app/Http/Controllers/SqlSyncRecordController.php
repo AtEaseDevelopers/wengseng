@@ -35,18 +35,21 @@ class SqlSyncRecordController extends Controller
         }
 
         // Always save response JSON to be traced in orders
-        $sqlSyncRespond = json_encode($data['response'] ?? ['Empty WengSengSqlSyncAcc Respond'], JSON_UNESCAPED_UNICODE);
+        $sqlSyncRespond = $data['response'] ?? ['Empty ' . env('APP_NAME') .' Respond'];
 
         // Process SQL Sync Record
         $record = SqlSyncRecord::logSyncResult($data);
 
+        // Get the specific response for the target_id
         $response = $sqlSyncRespond[$data['target_id']] ?? [];
+
+        // Determine success
         $isSuccess = ($data['status'] ?? '') === 'success'
             && ($response['status'] ?? '') === 'success';
 
         $update = [
-            'sql_sync_status'  => strtoupper($response['status']),
-            'sql_sync_respond' => json_encode($sqlSyncRespond),
+            'sql_sync_status'  => strtoupper($response['status'] ?? 'FAILED'),
+            'sql_sync_respond' => json_encode($sqlSyncRespond, JSON_UNESCAPED_UNICODE),
             'updated_at'       => now(),
         ];
 
