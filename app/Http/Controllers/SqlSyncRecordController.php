@@ -45,13 +45,14 @@ class SqlSyncRecordController extends Controller
             && ($response['status'] ?? '') === 'success';
 
         $update = [
-            'sql_sync_status'  => strtoupper($data['status'] ?? 'FAILED'),
+            'sql_sync_status'  => strtoupper($response['status'] ?? 'FAILED'),
             'sql_sync_respond' => json_encode($sqlSyncRespond),
             'updated_at'       => now(),
         ];
 
         if ($isSuccess) {
             $update['status'] = 'completed';
+            $update['sql_sync_status'] = 'SUCCESS';
             $update['do_no']  = $response['do_no'] ?? $data['target_name'] ?? null;
         }
 
