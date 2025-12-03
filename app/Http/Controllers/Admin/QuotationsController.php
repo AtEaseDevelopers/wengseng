@@ -52,6 +52,7 @@ class QuotationsController extends Controller
             ->where('product_daily_prices.user_category', decrypt($id))
             ->where('product_daily_prices.date', $date)
             ->where('product_daily_prices.price', '>', 0)
+            ->orderBy('product_categories.quotation_summary_sequence', 'asc')
             ->orderBy('product_categories.category_name', 'asc')
             ->orderBy('products.name', 'asc')
             ->get()

@@ -12,5 +12,6 @@ class ProductCategory extends Model
     protected $fillable = [
         'category_name',
         'excel_sheet_batch',
+        'quotation_summary_sequence',
     ];
 }

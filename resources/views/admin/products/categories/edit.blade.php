@@ -32,6 +32,15 @@
                                         </span>
                                     @enderror
                                 </div>
+                                <div class="mb-4">
+                                    <label class="mb-2" for="quotation_summary_sequence">Quotation Summary Sequence</label>
+                                    <input type="number" step="1" min="0" class="form-control @error('quotation_summary_sequence') is-invalid @enderror" name="quotation_summary_sequence" id="quotation_summary_sequence" placeholder="Enter quotation summary sequence" value="{{ $category->quotation_summary_sequence }}">
+                                    @error('quotation_summary_sequence')
+                                        <span class="text-danger" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                                 <div class="d-flex justify-content-end">
                                     <a href="{{ route('admin.product-categories.index') }}" class="btn btn-outline-secondary me-1">Back</a>
                                     <button type="submit" class="btn btn-outline-primary">

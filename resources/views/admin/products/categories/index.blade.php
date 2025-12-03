@@ -26,6 +26,7 @@
                                     <th>Options</th>
                                     <th>Category</th>
                                     <th>Excel Sheet Batch</th>
+                                    <th>Quotation Summary Sequence</th>
                                     <th>Total Products</th>
                                     <th>Created At</th>
                                 </tr>
@@ -112,6 +113,10 @@
                 },
                 {
                     "data": "excel_sheet_batch",
+                    orderable: true
+                },
+                {
+                    "data": "quotation_summary_sequence",
                     orderable: true
                 },
                 {

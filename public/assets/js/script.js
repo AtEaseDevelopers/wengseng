@@ -687,7 +687,7 @@ document.addEventListener('click', function(event) {
             formattedDate = `${yyyy}-${mm}-${dd}`;
         }
 
-        let textToCopy = `${title} (${data.date})\nDelivery Date: ${formattedDate}\n\n`;
+        let textToCopy = `${title} (${dateMatch[0]})\nDelivery Date: ${formattedDate}\n\n`;
 
         // Loop through each category (h6) and its products (li)
         box.querySelectorAll(".category-title").forEach(category => {
