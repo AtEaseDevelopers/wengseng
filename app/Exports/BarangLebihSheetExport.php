@@ -111,7 +111,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             $productTotal = 0;
             $hasData = false;
             
-            if (!in_array($product->category_name, $new_category)) {
+            if ($product != null && !in_array($product->category_name, $new_category)) {
                 $rows[] = ['Category' => $product->category_name];
                 $new_category[] = $product->category_name;
             }
