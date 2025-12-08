@@ -110,7 +110,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
                 ->where('product_id', $product->id)
                 ->where('date', $this->request->fdate)
                 ->first();
-            $row = ['Product' => $product->name, 'Receive' => $receive_qty->qty ?? 0, 'Receive Remark' => $receive_qty->remark ?? null, 'Balance' => $balance_qty->qty, 'Balance Remark' => $balance_qty->remark ?? null, 'UOM' => $product->uom_name];
+            $row = ['Product' => $product->name, 'Receive' => $receive_qty->qty ?? 0, 'Receive Remark' => $receive_qty->remark ?? null, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null, 'UOM' => $product->uom_name];
             $productTotal = 0;
             $hasData = false;
 
