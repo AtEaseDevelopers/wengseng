@@ -76,6 +76,7 @@ class ProductBalanceController extends Controller
                     'date' => $date,
                     'product_id' => $item['product_id'],
                     'qty' => $item['qty'],
+                    'remark' => $item['remark'],
                 ]);
             }
         }

@@ -102,8 +102,12 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
 
         $new_category = [];
         foreach ($products as $product) {
-            $balance_qty = DB::table('product_balance_quantities')->where('product_id', $product->id)->where('date', $this->request->fdate)->value('qty') ?? 0;
-            $row = ['Product' => $product->name, 'Balance' => $balance_qty];
+            $balance_qty = DB::table('product_balance_quantities')
+                ->select('qty', 'remark')
+                ->where('product_id', $product->id)
+                ->where('date', $this->request->fdate)
+                ->first();
+            $row = ['Product' => $product->name, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null];
             $productTotal = 0;
             $hasData = false;
             
@@ -164,7 +168,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
         return [
             ['Date', '', $this->request->fdate, ''],
             ['', '', '', ''],
-            array_merge(['Product', 'Balance']),
+            array_merge(['Product', 'Balance', 'Balance Remark']),
         ];
     }
 

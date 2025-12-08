@@ -41,8 +41,9 @@
                         <table class="table table-bordered" id="items-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 60%">Product</th>
+                                    <th style="width: 35%">Product</th>
                                     <th style="width: 25%">Qty</th>
+                                    <th style="width: 25%">Remark</th>
                                     <th style="width: 15%">Action</th>
                                 </tr>
                             </thead>
@@ -104,7 +105,7 @@
             // Initialize: add existing quantities first, then fill up to 50 rows
             if (existingQuantities.length > 0) {
                 existingQuantities.forEach(function(item) {
-                    addRow(item.product_id, item.qty);
+                    addRow(item.product_id, item.qty, item.remark);
                 });
             }
 
@@ -115,7 +116,10 @@
             }
         });
 
-        function addRow(productId = '', qty = '') {
+        function addRow(productId = '', qty = '', remark = '') {
+            if (remark === null) {
+                remark = ''
+            }
             var optionsHtml = '<option value="">Choose product</option>';
             products.forEach(function(product) {
                 var selected = (productId && product.id == productId) ? ' selected' : '';
@@ -131,7 +135,10 @@
                         </select>
                     </td>
                     <td>
-                        <input type="number" step="1" min="0" class="form-control" name="items[${rowIndex}][qty]" value="${qty}" placeholder="Enter qty">
+                        <input type="text" class="form-control" name="items[${rowIndex}][qty]" value="${qty}" placeholder="Enter qty">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" name="items[${rowIndex}][remark]" value="${remark}" placeholder="Enter remark">
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">

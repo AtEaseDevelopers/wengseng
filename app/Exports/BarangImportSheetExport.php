@@ -100,9 +100,17 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             $customerTotals[$userKey] = 0;
         }
         foreach ($products as $product) {
-            $receive_qty = DB::table('product_receive_quantities')->where('product_id', $product->id)->where('date', $this->request->fdate)->value('qty') ?? 0;
-            $balance_qty = DB::table('product_balance_quantities')->where('product_id', $product->id)->where('date', $this->request->fdate)->value('qty') ?? 0;
-            $row = ['Product' => $product->name, 'Receice' => $receive_qty, 'Balance' => $balance_qty, 'UOM' => $product->uom_name];
+            $receive_qty = DB::table('product_receive_quantities')
+                ->select('qty', 'remark')
+                ->where('product_id', $product->id)
+                ->where('date', $this->request->fdate)
+                ->first();
+            $balance_qty = DB::table('product_balance_quantities')
+                ->select('qty', 'remark')
+                ->where('product_id', $product->id)
+                ->where('date', $this->request->fdate)
+                ->first();
+            $row = ['Product' => $product->name, 'Receive' => $receive_qty->qty ?? 0, 'Receive Remark' => $receive_qty->remark, 'Balance' => $balance_qty->qty, 'Balance Remark' => $balance_qty->remark, 'UOM' => $product->uom_name];
             $productTotal = 0;
             $hasData = false;
 
@@ -143,7 +151,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
         }
 
         if (count($rows) > 0) {
-            $totalsRow = ['Product' => 'Total', 'Receice' => '', 'Balance' => '', 'UOM' => ''];
+            $totalsRow = ['Product' => 'Total', 'Receice' => '', 'Receive Remark' => '', 'Balance' => '', 'Balance Remark' => '', 'UOM' => ''];
             foreach ($this->users as $user) {
                 $userKey = $user->sql_customer_code ?? $user->name;
                 $totalsRow[$userKey] = $customerTotals[$userKey];
@@ -162,7 +170,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
         return [
             ['Date', '', $this->request->fdate, ''],
             ['', '', '', ''],
-            array_merge(['Product', 'Receive', 'Balance', 'UOM'], $userCodes, ['Total']),
+            array_merge(['Product', 'Receive', 'Receive Remark', 'Balance', 'Balance Remark', 'UOM'], $userCodes, ['Total']),
         ];
     }
 
