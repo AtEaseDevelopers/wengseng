@@ -69,7 +69,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             ->get();
             
         $balance_product_ids = DB::table('product_balance_quantities')
-            ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
+            ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
             ->where('qty', '>', 0)
             ->pluck('product_id')->toArray();
         $balance_products = DB::table('products')
@@ -111,7 +111,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             $balance_qty = DB::table('product_balance_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
-                ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
                 ->first();
             $row = ['Product' => $product->name, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null];
             $productTotal = 0;

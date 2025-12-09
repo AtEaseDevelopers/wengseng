@@ -67,7 +67,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->orderBy('products.name', 'asc')
             ->get();
             
-        $receive_product_ids = DB::table('product_receive_quantities')->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))->where('qty', '>', 0)->pluck('product_id')->toArray();
+        $receive_product_ids = DB::table('product_receive_quantities')->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))->where('qty', '>', 0)->pluck('product_id')->toArray();
         $receive_products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
             ->whereIn('products.id', $receive_product_ids)
@@ -104,12 +104,12 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             $receive_qty = DB::table('product_receive_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
-                ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
                 ->first();
             $balance_qty = DB::table('product_balance_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
-                ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
                 ->first();
             $row = ['Product' => $product->name, 'Receive' => $receive_qty->qty ?? 0, 'Receive Remark' => $receive_qty->remark ?? null, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null, 'UOM' => $product->uom_name];
             $productTotal = 0;
