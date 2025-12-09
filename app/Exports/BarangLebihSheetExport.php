@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -66,7 +68,10 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             ->orderBy('products.product_category_id', 'asc')
             ->get();
             
-        $balance_product_ids = DB::table('product_balance_quantities')->where('date', $this->request->fdate)->where('qty', '>', 0)->pluck('product_id')->toArray();
+        $balance_product_ids = DB::table('product_balance_quantities')
+            ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
+            ->where('qty', '>', 0)
+            ->pluck('product_id')->toArray();
         $balance_products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
             ->whereIn('products.id', $balance_product_ids)
@@ -101,11 +106,12 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
         }
 
         $new_category = [];
+        // dd($products);
         foreach ($products as $product) {
             $balance_qty = DB::table('product_balance_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
-                ->where('date', $this->request->fdate)
+                ->where('date', Carbon::parse($this->request->fdate)->subDay()->format('Y-m-d'))
                 ->first();
             $row = ['Product' => $product->name, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null];
             $productTotal = 0;
@@ -143,10 +149,10 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
                 }
             }
 
-            if ($hasData) {
+            // if ($hasData) {
                 // $row['Total'] = $productTotal;
                 $rows[] = $row;
-            }
+            // }
         }
         if (count($rows) > 0) {
             $totalsRow = ['Product' => 'Total', 'Balance' => ''];
@@ -157,6 +163,7 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
             // $totalsRow['Total'] = $grandTotal;
             $rows[] = $totalsRow;
         }
+        // dd($rows);
 
         return collect($rows);
     }
