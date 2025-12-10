@@ -120,7 +120,7 @@ class ProductDailyPriceController extends Controller
             }
         }
 
-        return back()->with('success', "Setting saved successfully.");
+        return redirect(url('/admin/product-daily-price/add/' . $date))->with('success', "Setting saved successfully.");
     }
 
     private function validate_daily_prices_batch(Request $request)
