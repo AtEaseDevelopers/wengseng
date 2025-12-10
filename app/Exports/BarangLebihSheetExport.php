@@ -106,7 +106,6 @@ class BarangLebihSheetExport implements FromCollection, WithHeadings, WithTitle,
         }
 
         $new_category = [];
-        // dd($products);
         foreach ($products as $product) {
             $balance_qty = DB::table('product_balance_quantities')
                 ->select('qty', 'remark')

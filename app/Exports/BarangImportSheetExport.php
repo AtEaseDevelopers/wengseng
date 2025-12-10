@@ -66,7 +66,8 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->distinct()
             ->orderBy('products.name', 'asc')
             ->get();
-            
+
+        // Receive
         $receive_product_ids = DB::table('product_receive_quantities')->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))->where('qty', '>', 0)->pluck('product_id')->toArray();
         $receive_products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
@@ -75,7 +76,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->distinct()
             ->orderBy('products.name', 'asc')
             ->get();
-            
+
         $new_products = collect();
         $new_products = $new_products->merge($products);
         for ($i = 0; $i < count($receive_products); $i++) {
@@ -91,6 +92,35 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             }
         }
         $products = $new_products;
+        // Balance
+        $balance_product_ids = DB::table('product_balance_quantities')
+            ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
+            ->where('qty', '>', 0)
+            ->pluck('product_id')->toArray();
+        $balance_products = DB::table('products')
+            ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+            ->whereIn('products.id', $balance_product_ids)
+            ->select('products.id', 'products.name', 'uoms.uom_name')
+            ->distinct()
+            ->orderBy('products.name', 'asc')
+            ->get();
+            
+        $new_products = collect();
+        $new_products = $new_products->merge($products);
+        for ($i = 0; $i < count($balance_products); $i++) {
+            $found_product = false;
+            for ($j = 0; $j < count($products); $j++) {
+                if ($balance_products[$i]->id == $products[$j]->id) {
+                    $found_product = true;
+                    break;
+                }
+            }
+            if (!$found_product) {
+                $new_products->push($balance_products[$i]);
+            }
+        }
+        $products = $new_products;
+
 
         $rows = [];
         $customerTotals = [];
