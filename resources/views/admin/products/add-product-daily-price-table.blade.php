@@ -196,7 +196,7 @@
                     }).then((result) => {
                         if (result.isConfirmed) {
                             // If user confirms, redirect to remove URL
-                            window.location.href = "{{ url('/admin/product-daily-price/add/'.$setup_date) }}/" + duplicate_to_date;
+                            window.location.href = "{{ url('/admin/product-daily-price/duplicate/'.$setup_date) }}/" + duplicate_to_date;
                         }
                     });
                 }

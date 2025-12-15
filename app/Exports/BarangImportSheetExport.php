@@ -71,7 +71,9 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
         $receive_product_ids = DB::table('product_receive_quantities')->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))->where('qty', '>', 0)->pluck('product_id')->toArray();
         $receive_products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+            ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
             ->whereIn('products.id', $receive_product_ids)
+            ->where('product_categories.category_name', 'like', '%import%')
             ->select('products.id', 'products.name', 'uoms.uom_name')
             ->distinct()
             ->orderBy('products.name', 'asc')
@@ -99,7 +101,9 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->pluck('product_id')->toArray();
         $balance_products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+            ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
             ->whereIn('products.id', $balance_product_ids)
+            ->where('product_categories.category_name', 'like', '%import%')
             ->select('products.id', 'products.name', 'uoms.uom_name')
             ->distinct()
             ->orderBy('products.name', 'asc')

@@ -222,7 +222,7 @@ class ProductDailyPriceController extends Controller
         if ($product_daily_price->status != ProductDailyPrice::$status['active']) {
             return redirect()->to('/product-daily-prices')->with('error', "The setting is not found in the system.");
         }
-        
+
         $product_daily_price->update(
             [
             'status' => ProductDailyPrice::$status['removed']
@@ -230,5 +230,39 @@ class ProductDailyPriceController extends Controller
         );
 
         return redirect(url('/admin/product-daily-prices'))->with('success', "Daily price setup has been removed.");
+    }
+
+    public function duplicate_all(Request $request, $source_date, $target_date)
+    {
+        // Get all prices from source date
+        $source_prices = ProductDailyPrice::where('date', $source_date)
+            ->where('status', ProductDailyPrice::$status['active'])
+            ->get();
+
+        // Duplicate each price to target date
+        foreach ($source_prices as $source_price) {
+            $exist = ProductDailyPrice::where([
+                'date' => $target_date,
+                'product_id' => $source_price->product_id,
+                'user_category' => $source_price->user_category,
+                'status' => ProductDailyPrice::$status['active'],
+            ])->first();
+
+            if ($exist) {
+                $exist->update(['price' => $source_price->price]);
+            } else {
+                ProductDailyPrice::create([
+                    'date' => $target_date,
+                    'product_id' => $source_price->product_id,
+                    'user_category' => $source_price->user_category,
+                    'price' => $source_price->price,
+                    'status' => ProductDailyPrice::$status['active'],
+                ]);
+            }
+        }
+
+        // Redirect to target date's first page
+        return redirect(url('/admin/product-daily-price/add/' . $target_date))
+            ->with('success', "Prices duplicated successfully from " . $source_date . " to " . $target_date);
     }
 }

@@ -61,6 +61,7 @@ Route::namespace('Admin')->middleware(['admin_bootstrap'])->prefix('admin')->gro
                         Route::get('/product-daily-price/add', 'create');
                         Route::get('/product-daily-price/add/{product_daily_price_id}', 'create');
                         Route::get('/product-daily-price/add/{date}/{duplicate_to_date}', 'create');
+                        Route::get('/product-daily-price/duplicate/{source_date}/{target_date}', 'duplicate_all');
                         Route::post('/product-daily-price/add/{date}', 'store_batch');
                         Route::post('/product-daily-price/add', 'store');
                     }
