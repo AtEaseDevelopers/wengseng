@@ -53,7 +53,7 @@ class SqlSyncRecordController extends Controller
         if ($isSuccess) {
             $update['status'] = 'completed';
             $update['sql_sync_status'] = 'SUCCESS';
-            $update['do_no']  = $data['target_name'] ?? null;
+           // $update['do_no']  = $data['target_name'] ?? null;
         }
 
         DB::table('orders')
