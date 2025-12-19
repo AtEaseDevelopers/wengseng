@@ -27,7 +27,7 @@ class InvoiceSyncService
 
             // Initialize response and remark
             $sync_inv = null;
-            $responseLog = null;
+            $responseLog = null; 
             $remark = null;
 
             try {

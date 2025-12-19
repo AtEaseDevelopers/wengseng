@@ -24,6 +24,7 @@ use App\User;
 use Illuminate\Support\Facades\Auth;
 use App\Services\DeliveryOrderSyncService;
 use App\Services\InvoiceSyncService;
+use App\SqlSyncRecord;
 
 class OrderController extends Controller
 {
@@ -1235,33 +1236,7 @@ class OrderController extends Controller
         ]);
 
         $orderIds = array_filter(explode(',', $request->input('orders_id')));
-        $orders = Order::getOrdersWithUser($orderIds);
-        $cartIds = $orders->pluck('cart_id')->filter()->unique()->all();
-
-        $cartItemsMap = Order::getCartItemsForOrders($cartIds);
-
-        $allOrders = $orders
-            ->map(function ($order) use ($cartItemsMap) {
-                return [
-                    'id' => $order->id,
-                    'do_no' => $order->do_no,
-                    'do_date' => $order->do_date,
-                    'attn_name' => $order->attn_name,
-                    'attn_contact' => $order->attn_contact,
-                    'billing_address' => $order->billing_address,
-                    'payment_method' => $order->payment_method,
-                    'sql_sync_status' => $order->sql_sync_status,
-                    'sql_sync_respond' => $order->sql_sync_respond,
-                    'user_name' => $order->user_name,
-                    'user_email' => $order->user_email,
-                    'sql_customer_code' => $order->sql_customer_code,
-                    'status' => $order->status,
-                    'cart_id' => $order->cart_id,
-                    'items' => $cartItemsMap[$order->cart_id] ?? [],
-                ];
-            })->keyBy('id'); // This sets 'id' as the key for $allOrders
-
-
+        $allOrders = Order::prepareSyncOrders($orderIds);
         $validOrders = [];
         $invalidOrders = [];
         $notFoundOrders = [];
@@ -1299,13 +1274,24 @@ class OrderController extends Controller
         $syncFailures = [];
 
         if (!empty($validOrders)) {
-            $syncResult = app(InvoiceSyncService::class)->sync(collect($validOrders));
+            foreach ($validOrders as $id => $order) {
+                try {
+                    // 🆕 Save sync queue record
+                    SqlSyncRecord::queue([
+                        'target_id'   => $order['id'],
+                        'action'      => 'invoice',
+                        'target_name' => $order['do_no'],
+                        'details'     => $order,
+                    ]);
+                    DB::table('orders')->where('id', $order['id'])->update([
+                        'sql_sync_status'  => 'PENDING',
+                        'updated_at'       => now(),
+                    ]);
 
-            foreach ($syncResult as $id => $result) {
-                if ($result['status'] === 'success') {
-                    $syncedOrders[$id] = $result['message'];
-                } else {
-                    $syncFailures[$id] = $result['message'];
+                    $syncedOrders[$id] = "Sync job queued";
+
+                } catch (\Exception $ex) {
+                    $syncFailures[$id] = $ex->getMessage();
                 }
             }
         }

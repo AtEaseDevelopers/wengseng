@@ -266,7 +266,7 @@
                                         </td>
                                         <td class="text-center">{!! __('order.status.' . $order->status) !!}</td>
                                         <td class="text-center">
-                                            {!! isset($order->sql_sync_status, $order->sql_sync_respond)
+                                            {!! isset($order->sql_sync_status)
                                                 ? \App\Helper::sql_sync_status_badge($order->sql_sync_status, $order->sql_sync_respond)
                                                 : '<span class="text-muted">—</span>' !!}
                                         </td>
