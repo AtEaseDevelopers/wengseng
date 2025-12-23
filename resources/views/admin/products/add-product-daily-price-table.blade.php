@@ -79,6 +79,7 @@
             <div class="card shadow no-border mb-0">
                 <div class="card-body">
                     <h5 class="mb-4">Set Daily Price</h5>
+                    <div class="mb-3">{{ $products->links('pagination::bootstrap-4') }}</div>
                     <form method="POST" action="{{ url('/admin/product-daily-price/add') . '/' . $setup_date }}" enctype="multipart/form-data" class="form-wrapper">
                         @csrf
                         @if ($products->count() == 0)
