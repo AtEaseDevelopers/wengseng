@@ -1125,7 +1125,7 @@ class OrderController extends Controller
      */
     private static function generateDoNumber($order)
     {
-        $prefix = 'DO' . now()->format('ym');
+        $prefix = 'IV ' . now()->format('ym') . '-';
         $latest = Order::where('do_no', 'like', $prefix . '%')
             ->orderBy('do_no', 'desc')
             ->first();

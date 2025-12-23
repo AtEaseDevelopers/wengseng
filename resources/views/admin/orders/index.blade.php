@@ -89,8 +89,8 @@
                                     <select class="form-select" name="orderby" id="orderby">
                                         <option value="desc" {{ ($input['orderby'] ?? '') === 'desc'? " selected" : "" }}>Latest First</option>
                                         <option value="asc" {{ ($input['orderby'] ?? '') === 'asc'? " selected" : "" }}>Oldest First</option>
-                                        <option value="do_no_asc" {{ ($input['orderby'] ?? '') === 'do_no_asc'? " selected" : "" }}>DO No Latest First</option>
-                                        <option value="do_no_desc" {{ ($input['orderby'] ?? '') === 'do_no_desc'? " selected" : "" }}>DO No Oldest First</option>
+                                        <option value="do_no_asc" {{ ($input['orderby'] ?? '') === 'do_no_asc'? " selected" : "" }}>INV No Latest First</option>
+                                        <option value="do_no_desc" {{ ($input['orderby'] ?? '') === 'do_no_desc'? " selected" : "" }}>INV No Oldest First</option>
                                     </select>
                                 </div>
                             </div>
@@ -177,7 +177,7 @@
                                     </th>
                                     <th>Option</th>
                                     <th>Order ID</th>
-                                    <th>DO No</th>
+                                    <th>INV No</th>
                                     <th>Order At</th>
                                     <th>Delivering Date</th>
                                     <th>Customer</th>
