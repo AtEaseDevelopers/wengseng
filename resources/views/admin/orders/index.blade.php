@@ -245,7 +245,7 @@
                                             </div>
                                         </td>
                                         <td>{{ $order->id }}</td>
-                                        <td>{{ $order->do_no }}</td>
+                                        <td>{{ (empty($order->do_no) || str_starts_with($order->do_no, 'DO')) ? 'INV-' . $order->id : $order->do_no }}</td>
                                         <td>{{ $order->created_at }}</td>
                                         <td>{{ $order->delivering_date }}</td>
                                         <td>
