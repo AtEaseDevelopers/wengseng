@@ -135,7 +135,7 @@ class Order extends Model
         return $orders->map(function ($order) use ($cartItemsMap) {
             return [
                 'id' => $order->id,
-                'do_no' => 'IV ' . now()->format('ym') . '-' . $order->id,
+                'do_no' => $order->do_no,
                 'do_date' => $order->do_date,
                 'attn_name' => $order->attn_name,
                 'attn_contact' => $order->attn_contact,
