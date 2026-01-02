@@ -74,7 +74,7 @@ class CustomerCategoriesController extends Controller
     public function fetch_categories(Request $request)
     {
         $columns = array('id', 'options', 'category_name', 'total_products', 'created_at');
-        $totalRecords = DB::table('product_categories')->count();
+        $totalRecords = DB::table('customer_categories')->count();
         $totalFiltered = $totalRecords;
         if ($request->input('length') == -1) {
             $limit =  $totalRecords;
