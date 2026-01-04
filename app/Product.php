@@ -40,7 +40,7 @@ class Product extends Model
         $product_daily_price = ProductDailyPrice::where('date', $date)
             ->where('product_id', $product->id)
             ->where('status', ProductDailyPrice::$status['active'])
-            ->where('user_category', $user->category)
+            ->where('user_category', $user->customer_category_id)
             ->first();
 
         if ($product_daily_price) {

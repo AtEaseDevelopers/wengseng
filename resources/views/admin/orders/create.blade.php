@@ -268,6 +268,8 @@
                 if ($(this).val()) {
                     $('#order-products-section').removeClass('d-none');
                     $('#submit-buttons-section').removeClass('d-none');
+                    // Fetch customer-specific prices
+                    fetchCustomerPrices($(this).val());
                 } else {
                     $('#order-products-section').addClass('d-none');
                     $('#submit-buttons-section').addClass('d-none');
@@ -498,6 +500,27 @@
                 }
             });
             calculateGrandTotal();
+        }
+
+        function fetchCustomerPrices(customerId) {
+            $.get('/admin/order/get-products/' + customerId, function(response) {
+                var data = JSON.parse(response);
+                if (data.success && data.products) {
+                    // Update productsData with customer-specific prices
+                    Object.keys(data.products).forEach(function(id) {
+                        if (productsData[id]) {
+                            productsData[id].price = data.products[id].price;
+                        }
+                    });
+                    // Refresh displayed prices for already-selected products
+                    $('.product-row').each(function() {
+                        var productId = $(this).find('.product-select').val();
+                        if (productId) {
+                            onProductSelect($(this));
+                        }
+                    });
+                }
+            });
         }
     </script>
 

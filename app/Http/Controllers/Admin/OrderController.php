@@ -236,10 +236,11 @@ class OrderController extends Controller
                     'products.price',
                     'products.weight',
                     'products.sell_in',
-                    DB::raw("(SELECT product_daily_prices.price 
-                        FROM product_daily_prices 
-                        WHERE product_daily_prices.product_id = products.id 
-                        AND product_daily_prices.date = '" . $pricing_date . "' 
+                    DB::raw("(SELECT product_daily_prices.price
+                        FROM product_daily_prices
+                        WHERE product_daily_prices.product_id = products.id
+                        AND product_daily_prices.date = '" . $pricing_date . "'
+                        AND product_daily_prices.user_category = " . ($user->customer_category_id ?? 'NULL') . "
                         LIMIT 1) as daily_price"
                     ),
                     DB::raw("
@@ -445,6 +446,8 @@ class OrderController extends Controller
         // remove all added product first, add back later
         // Order::where('order_id', $order->id)->delete();
 
+        $pricing_date = $request['pricing_date'] ?? date('Y-m-d');
+
         foreach ($data['product_id'] as $key => $product_id) {
             $product = DB::table('products')
                 ->select(
@@ -453,14 +456,21 @@ class OrderController extends Controller
                     'products.price',
                     'products.weight',
                     'products.sell_in',
+                    DB::raw("(SELECT product_daily_prices.price
+                        FROM product_daily_prices
+                        WHERE product_daily_prices.product_id = products.id
+                        AND product_daily_prices.date = '" . $pricing_date . "'
+                        AND product_daily_prices.user_category = " . ($user->customer_category_id ?? 'NULL') . "
+                        LIMIT 1) as daily_price"
+                    ),
                     DB::raw("
                         (
-                            SELECT pdp.price 
+                            SELECT pdp.price
                             FROM product_default_pricings pdp
-                            WHERE pdp.product_id = products.id 
+                            WHERE pdp.product_id = products.id
                             AND pdp.customer_category_id = (
-                                SELECT u.customer_category_id 
-                                FROM users u 
+                                SELECT u.customer_category_id
+                                FROM users u
                                 WHERE u.id = {$user->id}
                             )
                         ) as category_price"
@@ -480,7 +490,7 @@ class OrderController extends Controller
                 $qtyWeight = $weight;
             }
            
-            $unit_price = $product->category_price ?? $product->price;
+            $unit_price = $product->daily_price ?? $product->category_price ?? $product->price;
             $price = $unit_price * $qtyWeight;
 
             $order_product = OrderProduct::updateOrCreate(
@@ -592,7 +602,7 @@ class OrderController extends Controller
             if ($id != 'products_visibility') {
                 $products[$key]->price = Product::get_today_price($value->id, $customer);
             }
-            $products[$key]->image_url = url('/') . '/' . Product::$path."/".$value->id."/".$image[0];
+            $products[$key]->image_url = $image ? url('/') . '/' . Product::$path."/".$value->id."/".$image[0] : '';
             $products[$key]->product_option = Product::getOption($value->id, true);
             $products_output[$value->id] = $products[$key];
         }
