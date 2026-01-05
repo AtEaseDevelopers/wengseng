@@ -43,7 +43,6 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
             ->where('orders.status', '!=', 'cancelled');
 
         $this->users = $query->select('users.id', 'users.sql_customer_code', 'users.name')
-            ->whereNotNull('users.sql_customer_code')
             ->distinct()
             ->orderBy('users.sql_customer_code', 'asc')
             ->get();

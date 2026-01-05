@@ -72,7 +72,6 @@ class CustomerUomsReport implements WithMultipleSheets
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
             ->select('users.id', 'users.sql_customer_code', 'users.name', 'users.customer_category_id')
-            ->whereNotNull('users.sql_customer_code')
             ->where('orders.status', '!=', 'cancelled')
             ->distinct()
             ->orderBy('users.sql_customer_code', 'asc')
