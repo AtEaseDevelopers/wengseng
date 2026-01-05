@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -48,10 +49,22 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
             ->get();
     }
 
+    protected function hasDryCondimentCategory(): bool
+    {
+        foreach ($this->categories as $cat) {
+            if (stripos($cat->category_name, 'dry') !== false &&
+                stripos($cat->category_name, 'condiment') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function collection()
     {
         // Get category IDs
         $categoryIds = array_map(fn($cat) => $cat->id, $this->categories);
+        $isDryCondiment = $this->hasDryCondimentCategory();
 
         $products = DB::table('products')
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
@@ -74,6 +87,75 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
             ->orderBy('products.name', 'asc')
             ->get();
 
+        // For dry condiment, also include products from receive/balance quantities
+        if ($isDryCondiment) {
+            // Receive products
+            $receive_product_ids = DB::table('product_receive_quantities')
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(1)->format('Y-m-d'))
+                ->where('qty', '>', 0)
+                ->pluck('product_id')->toArray();
+            $receive_products = DB::table('products')
+                ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+                ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
+                ->whereIn('products.id', $receive_product_ids)
+                ->where(function ($q) {
+                    $q->where('product_categories.category_name', 'like', '%dry%condiment%');
+                })
+                ->select('products.id', 'products.name', 'uoms.uom_name')
+                ->distinct()
+                ->orderBy('products.name', 'asc')
+                ->get();
+
+            $new_products = collect();
+            $new_products = $new_products->merge($products);
+            foreach ($receive_products as $receive_product) {
+                $found = false;
+                foreach ($products as $product) {
+                    if ($receive_product->id == $product->id) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $new_products->push($receive_product);
+                }
+            }
+            $products = $new_products;
+
+            // Balance products
+            $balance_product_ids = DB::table('product_balance_quantities')
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
+                ->where('qty', '>', 0)
+                ->pluck('product_id')->toArray();
+            $balance_products = DB::table('products')
+                ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+                ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
+                ->whereIn('products.id', $balance_product_ids)
+                ->where(function ($q) {
+                    $q->where('product_categories.category_name', 'like', '%dry%condiment%');
+                })
+                ->select('products.id', 'products.name', 'uoms.uom_name')
+                ->distinct()
+                ->orderBy('products.name', 'asc')
+                ->get();
+
+            $new_products = collect();
+            $new_products = $new_products->merge($products);
+            foreach ($balance_products as $balance_product) {
+                $found = false;
+                foreach ($products as $product) {
+                    if ($balance_product->id == $product->id) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $new_products->push($balance_product);
+                }
+            }
+            $products = $new_products;
+        }
+
         $rows = [];
         $customerTotals = [];
         $grandTotal = 0;
@@ -84,7 +166,28 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
         }
 
         foreach ($products as $product) {
-            $row = ['Product' => $product->name, 'UOM' => $product->uom_name];
+            if ($isDryCondiment) {
+                $receive_qty = DB::table('product_receive_quantities')
+                    ->select('qty', 'remark')
+                    ->where('product_id', $product->id)
+                    ->where('date', Carbon::parse($this->request->fdate)->subDays(1)->format('Y-m-d'))
+                    ->first();
+                $balance_qty = DB::table('product_balance_quantities')
+                    ->select('qty', 'remark')
+                    ->where('product_id', $product->id)
+                    ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
+                    ->first();
+                $row = [
+                    'Product' => $product->name,
+                    'Receive' => $receive_qty->qty ?? 0,
+                    'Receive Remark' => $receive_qty->remark ?? null,
+                    'Balance' => $balance_qty->qty ?? 0,
+                    'Balance Remark' => $balance_qty->remark ?? null,
+                    'UOM' => $product->uom_name
+                ];
+            } else {
+                $row = ['Product' => $product->name, 'UOM' => $product->uom_name];
+            }
             $productTotal = 0;
             $hasData = false;
 
@@ -115,14 +218,28 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                 }
             }
 
-            if ($hasData) {
-                $row['Total'] = $productTotal;
-                $rows[] = $row;
+            // For dry condiment, always include row (even without order data) if it has receive/balance
+            if ($isDryCondiment) {
+                if ($hasData || count($this->users) <= 0 ||
+                    ($receive_qty && $receive_qty->qty > 0) ||
+                    ($balance_qty && $balance_qty->qty > 0)) {
+                    $row['Total'] = $productTotal;
+                    $rows[] = $row;
+                }
+            } else {
+                if ($hasData) {
+                    $row['Total'] = $productTotal;
+                    $rows[] = $row;
+                }
             }
         }
 
         if (count($rows) > 0) {
-            $totalsRow = ['Product' => 'Total', 'UOM' => ''];
+            if ($isDryCondiment) {
+                $totalsRow = ['Product' => 'Total', 'Receive' => '', 'Receive Remark' => '', 'Balance' => '', 'Balance Remark' => '', 'UOM' => ''];
+            } else {
+                $totalsRow = ['Product' => 'Total', 'UOM' => ''];
+            }
             foreach ($this->users as $user) {
                 $userKey = $user->sql_customer_code ?? $user->name;
                 $totalsRow[$userKey] = $customerTotals[$userKey];
@@ -137,7 +254,15 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
     public function headings(): array
     {
         $userCodes = array_map(fn($u) => $u->sql_customer_code ?? $u->name, $this->users->toArray());
-        
+
+        if ($this->hasDryCondimentCategory()) {
+            return [
+                ['Date', '', $this->request->fdate, ''],
+                ['', '', '', ''],
+                array_merge(['Product', 'Receive', 'Receive Remark', 'Balance', 'Balance Remark', 'UOM'], $userCodes, ['Total']),
+            ];
+        }
+
         return [
             ['Date', '', $this->request->fdate, ''],
             ['', '', '', ''],

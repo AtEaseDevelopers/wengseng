@@ -46,10 +46,16 @@ class ProductReceiveController extends Controller
             ->with('product')
             ->get();
 
-        // Get all active products for Select2 dropdown
-        $products = Product::where('status', Product::$status['active'])
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'sku']);
+        // Get active products for Select2 dropdown (only 'dry condiment' and 'import' categories)
+        $products = Product::where('products.status', Product::$status['active'])
+            ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
+            ->where(function ($q) {
+                $q->where('product_categories.category_name', 'like', '%import%')
+                  ->orWhere('product_categories.category_name', 'like', '%dry%condiment%');
+            })
+            ->orderBy('products.name', 'asc')
+            ->select('products.id', 'products.name', 'products.sku')
+            ->get();
 
         return view(
             'admin.products.add-product-receive-qty-table', [
