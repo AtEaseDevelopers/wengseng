@@ -671,14 +671,11 @@ class OrderController extends Controller
         $ids = explode(',', $request->orders_id);
         if ($ids) {
             foreach ($ids as $id) {
-                if (!DB::table('order_products')->where('weight', null)->where('order_id', $id)->first()) {
-                    DB::table('orders')->where('id', $id)->update(
-                        [
-                            // 'order_weight' => $request->order_weight,
-                            'status' => $request->status,
-                        ]
-                    );
-                }
+                DB::table('orders')->where('id', $id)->update(
+                    [
+                        'status' => $request->status,
+                    ]
+                );
             }
         }
 

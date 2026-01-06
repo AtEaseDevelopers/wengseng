@@ -35,7 +35,7 @@ class CustomerUomsReport implements WithMultipleSheets
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
             ->where('orders.status', '!=', 'cancelled')
-            ->where('product_categories.category_name', '!=', 'IMPORT')
+            ->whereNotIn('product_categories.category_name', ['IMPORT VEGETABLES'])
             ->select('product_categories.id', 'product_categories.category_name', 'product_categories.excel_sheet_batch')
             ->distinct()
             ->get();
