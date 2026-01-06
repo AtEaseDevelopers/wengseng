@@ -163,7 +163,7 @@
                                             <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0" value="{{ $product->quantity ?? $product->weight ?? 0 }}">
                                         </td>
                                         <td class="uom-cell">{{ $product->uom_name ?? '' }}</td>
-                                        <td class="price-cell">RM {{ number_format($product->unit_price, 2) }}</td>
+                                        <td><input type="number" class="form-control price-input" name="unit_price[]" step="0.01" min="0" value="{{ number_format($product->unit_price, 2, '.', '') }}"></td>
                                         <td class="total-cell"><strong>RM {{ number_format($product->unit_price * ($product->quantity ?? $product->weight ?? 0), 2) }}</strong></td>
                                         <td>
                                             <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks" value="{{ $product->remark ?? '' }}">
@@ -186,7 +186,7 @@
                                             <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0">
                                         </td>
                                         <td class="uom-cell"></td>
-                                        <td class="price-cell">RM 0</td>
+                                        <td><input type="number" class="form-control price-input" name="unit_price[]" step="0.01" min="0" value="0"></td>
                                         <td class="total-cell"><strong>RM 0.00</strong></td>
                                         <td>
                                             <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks">
@@ -299,6 +299,12 @@
                 calculateGrandTotal();
             });
 
+            // Price change handler (delegated)
+            $(document).on('change keyup', '.price-input', function() {
+                calculateRowTotal($(this).closest('tr'));
+                calculateGrandTotal();
+            });
+
             // Product select change handler (delegated)
             $(document).on('change', '.product-select', function() {
                 onProductSelect($(this).closest('tr'));
@@ -348,8 +354,7 @@
                 var price = product.price || 0;
 
                 $row.find('.uom-cell').text(product.uom_name || '');
-                $row.find('.price-cell').text('RM ' + parseFloat(price).toFixed(2));
-                $row.data('price', price);
+                $row.find('.price-input').val(parseFloat(price).toFixed(2));
 
                 var $qty = $row.find('.quantity-input');
                 if (!$qty.val()) {
@@ -360,15 +365,14 @@
                 calculateGrandTotal();
             } else {
                 $row.find('.uom-cell').text('');
-                $row.find('.price-cell').text('RM 0');
+                $row.find('.price-input').val(0);
                 $row.find('.total-cell').html('<strong>RM 0.00</strong>');
-                $row.data('price', 0);
                 calculateGrandTotal();
             }
         }
 
         function calculateRowTotal($row) {
-            var price = parseFloat($row.data('price')) || 0;
+            var price = parseFloat($row.find('.price-input').val()) || 0;
             var qty = parseFloat($row.find('.quantity-input').val()) || 0;
             var total = price * qty;
             $row.find('.total-cell').html('<strong>RM ' + total.toFixed(2) + '</strong>');
@@ -396,7 +400,7 @@
                         <input type="number" class="form-control quantity-input" name="quantity[]" step="0.01" min="0">
                     </td>
                     <td class="uom-cell"></td>
-                    <td class="price-cell">RM 0</td>
+                    <td><input type="number" class="form-control price-input" name="unit_price[]" step="0.01" min="0" value="0"></td>
                     <td class="total-cell"><strong>RM 0.00</strong></td>
                     <td>
                         <input type="text" class="form-control remark-input" name="remark[]" placeholder="Remarks">
@@ -418,9 +422,8 @@
             $row.find('.quantity-input').val('');
             $row.find('.remark-input').val('');
             $row.find('.uom-cell').text('');
-            $row.find('.price-cell').text('RM 0');
+            $row.find('.price-input').val(0);
             $row.find('.total-cell').html('<strong>RM 0.00</strong>');
-            $row.data('price', 0);
             $row.data('total', 0);
             calculateGrandTotal();
         }

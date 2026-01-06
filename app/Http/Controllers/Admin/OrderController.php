@@ -269,12 +269,8 @@ class OrderController extends Controller
                 $weight = $qtyWeight;
             }
 
-            $unit_price = $product->price;
-            if ($product->daily_price) {
-                $unit_price = $product->daily_price;
-            } elseif ($product->category_price) {
-                $unit_price = $product->category_price;
-            }
+            // Use submitted unit_price if provided, otherwise fall back to calculated price
+            $unit_price = $data['unit_price'][$key] ?? $product->daily_price ?? $product->category_price ?? $product->price;
             $price = $unit_price * $qtyWeight;
             
             $order_product = OrderProduct::create(
@@ -490,7 +486,8 @@ class OrderController extends Controller
                 $qtyWeight = $weight;
             }
            
-            $unit_price = $product->daily_price ?? $product->category_price ?? $product->price;
+            // Use submitted unit_price if provided, otherwise fall back to calculated price
+            $unit_price = $data['unit_price'][$key] ?? $product->daily_price ?? $product->category_price ?? $product->price;
             $price = $unit_price * $qtyWeight;
 
             $order_product = OrderProduct::updateOrCreate(
@@ -571,6 +568,7 @@ class OrderController extends Controller
             "remark" => ['array'],
             "quantity" => ['array'],
             "weight" => ['array'],
+            "unit_price" => ['array'],
         ];
 
         try {
@@ -640,7 +638,8 @@ class OrderController extends Controller
             "remark" => ['array'],
             'nos' => ['array'],
             "quantity" => ['array'],
-            "weight" => ['array']
+            "weight" => ['array'],
+            "unit_price" => ['array'],
         ];
 
         try {
