@@ -444,6 +444,14 @@ class OrderController extends Controller
 
         $pricing_date = $request['pricing_date'] ?? date('Y-m-d');
 
+        // Get original active product IDs to detect removed products
+        $originalProductIds = OrderProduct::where('order_id', $order->id)
+            ->where('status', OrderProduct::$status['active'])
+            ->pluck('product_id')
+            ->toArray();
+
+        $submittedProductIds = array_filter($data['product_id'] ?? []);
+
         foreach ($data['product_id'] as $key => $product_id) {
             $product = DB::table('products')
                 ->select(
@@ -519,6 +527,14 @@ class OrderController extends Controller
                 }
             }
             $total += $price;
+        }
+
+        // Mark products that were removed (not in submission) as 'removed'
+        $productsToRemove = array_diff($originalProductIds, $submittedProductIds);
+        if (!empty($productsToRemove)) {
+            OrderProduct::where('order_id', $order->id)
+                ->whereIn('product_id', $productsToRemove)
+                ->update(['status' => OrderProduct::$status['removed']]);
         }
 
         $order->fill(
