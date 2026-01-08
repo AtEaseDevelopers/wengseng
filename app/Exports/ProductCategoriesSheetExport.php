@@ -105,6 +105,36 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
         }
         $products = $new_products;
 
+        // Also include products from balance quantities
+        $balance_product_ids = DB::table('product_balance_quantities')
+            ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
+            ->where('qty', '>', 0)
+            ->pluck('product_id')->toArray();
+        $balance_products = DB::table('products')
+            ->join('uoms', 'uoms.id', '=', 'products.uom_id')
+            ->whereIn('products.id', $balance_product_ids)
+            ->whereIn('products.product_category_id', $categoryIds)
+            ->select('products.id', 'products.name', 'uoms.uom_name')
+            ->distinct()
+            ->orderBy('products.name', 'asc')
+            ->get();
+
+        $new_products = collect();
+        $new_products = $new_products->merge($products);
+        foreach ($balance_products as $balance_product) {
+            $found = false;
+            foreach ($products as $product) {
+                if ($balance_product->id == $product->id) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $new_products->push($balance_product);
+            }
+        }
+        $products = $new_products;
+
         $rows = [];
         $customerTotals = [];
         $grandTotal = 0;
@@ -120,10 +150,17 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                 ->where('product_id', $product->id)
                 ->where('date', Carbon::parse($this->request->fdate)->subDays(1)->format('Y-m-d'))
                 ->first();
+            $balance_qty = DB::table('product_balance_quantities')
+                ->select('qty', 'remark')
+                ->where('product_id', $product->id)
+                ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
+                ->first();
             $row = [
                 'Product' => $product->name,
                 'Receive' => $receive_qty->qty ?? 0,
                 'Receive Remark' => $receive_qty->remark ?? null,
+                'Balance' => $balance_qty->qty ?? 0,
+                'Balance Remark' => $balance_qty->remark ?? null,
                 'UOM' => $product->uom_name
             ];
             $productTotal = 0;
@@ -156,15 +193,15 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                 }
             }
 
-            // Include row if has order data OR has receive qty
-            if ($hasData || count($this->users) <= 0 || ($receive_qty && $receive_qty->qty > 0)) {
+            // Include row if has order data OR has receive qty OR has balance qty
+            if ($hasData || count($this->users) <= 0 || ($receive_qty && $receive_qty->qty > 0) || ($balance_qty && $balance_qty->qty > 0)) {
                 $row['Total'] = $productTotal;
                 $rows[] = $row;
             }
         }
 
         if (count($rows) > 0) {
-            $totalsRow = ['Product' => 'Total', 'Receive' => '', 'Receive Remark' => '', 'UOM' => ''];
+            $totalsRow = ['Product' => 'Total', 'Receive' => '', 'Receive Remark' => '', 'Balance' => '', 'Balance Remark' => '', 'UOM' => ''];
             foreach ($this->users as $user) {
                 $userKey = $user->sql_customer_code ?? $user->name;
                 $totalsRow[$userKey] = $customerTotals[$userKey];
@@ -183,7 +220,7 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
         return [
             ['Date', '', $this->request->fdate, ''],
             ['', '', '', ''],
-            array_merge(['Product', 'Receive', 'Receive Remark', 'UOM'], $userCodes, ['Total']),
+            array_merge(['Product', 'Receive', 'Receive Remark', 'Balance', 'Balance Remark', 'UOM'], $userCodes, ['Total']),
         ];
     }
 
