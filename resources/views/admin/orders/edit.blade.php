@@ -418,7 +418,7 @@
         }
 
         function clearProductRow($row) {
-            $row.find('.product-select').val(null).trigger('change');
+            $row.find('.product-select').val('').trigger('change');
             $row.find('.quantity-input').val('');
             $row.find('.remark-input').val('');
             $row.find('.uom-cell').text('');
