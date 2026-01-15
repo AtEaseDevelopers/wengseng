@@ -8,9 +8,12 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 
-class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths
+class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths, WithEvents
 {
     protected $user;
     protected $request;
@@ -56,7 +59,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
         $total_price = 0;
 
         foreach ($productsByCategory as $category => $products) {
-            $rows[] = [$category, '', '', '', '', ''];
+            $rows[] = [$category, '', '', '', '', '', ''];
             foreach ($products as $product) {
                 $qty = DB::table('order_products')
                     ->join('orders', 'orders.id', '=', 'order_products.order_id')
@@ -89,18 +92,19 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
                     $product->uom_name,
                     $displayQty,
                     '',
+                    '',
                     $dailyPrice,
                     '',
                 ];
             }
 
-            $rows[] = ['', '', '', '', '', '', ''];
+            $rows[] = ['', '', '', '', '', '', '', ''];
         }
 
         if (count($rows) > 0) {
-            $rows[] = ['', '', '', '', '', '', ''];
-            $rows[] = ['', '', '', '', '', '', ''];
-            $rows[] = ['Total', '', $total_qty, '', $total_price, ''];
+            $rows[] = ['', '', '', '', '', '', '', ''];
+            $rows[] = ['', '', '', '', '', '', '', ''];
+            $rows[] = ['Total', '', $total_qty, '', '', $total_price, ''];
         }
 
         return collect($rows);
@@ -113,7 +117,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
         return [
             ['OUTLET', '', $title, 'DATE OF DELIVERY'],
             ['', '', '', $this->request->fdate, ''],
-            ['Product', 'UOM', 'Quantity', '', 'Price', 'BK'],
+            ['Product', 'UOM', 'Quantity', '', '', 'Price', 'BK'],
         ];
     }
 
@@ -150,6 +154,46 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
             'D' => 20,
             'E' => 20,
             'F' => 20,
+            'G' => 20,
+        ];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+
+                // Calculate center row based on actual data
+                $highestRow = $sheet->getHighestRow();
+                $centerRow = max(4, intval($highestRow / 2));
+
+                // Create watermark image
+                $img = imagecreatetruecolor(300, 100);
+                imagesavealpha($img, true);
+                $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
+                imagefill($img, 0, 0, $transparent);
+
+                $gray = imagecolorallocate($img, 211, 211, 211);
+
+                $fontPath = '/System/Library/Fonts/Helvetica.ttc';
+                if (file_exists($fontPath)) {
+                    imagettftext($img, 48, 0, 20, 70, $gray, $fontPath, 'Page 1');
+                } else {
+                    for ($i = 0; $i < 3; $i++) {
+                        for ($j = 0; $j < 3; $j++) {
+                            imagestring($img, 5, 50 + $i, 40 + $j, 'Page 1', $gray);
+                        }
+                    }
+                }
+
+                $drawing = new MemoryDrawing();
+                $drawing->setImageResource($img);
+                $drawing->setRenderingFunction(MemoryDrawing::RENDERING_PNG);
+                $drawing->setMimeType(MemoryDrawing::MIMETYPE_PNG);
+                $drawing->setCoordinates('D' . $centerRow);
+                $drawing->setWorksheet($sheet);
+            }
         ];
     }
 }
