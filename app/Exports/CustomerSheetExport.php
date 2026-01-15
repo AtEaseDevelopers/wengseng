@@ -8,12 +8,10 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths, WithEvents
+class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths
 {
     protected $user;
     protected $request;
@@ -142,6 +140,9 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
 
         $styles[$rowCount + 3] = ['font' => ['bold' => true]];
 
+        // Apply number format to price column (F)
+        $sheet->getStyle('F:F')->getNumberFormat()->setFormatCode('#,##0.00');
+
         return $styles;
     }
 
@@ -158,42 +159,4 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
         ];
     }
 
-    public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-
-                // Calculate center row based on actual data
-                $highestRow = $sheet->getHighestRow();
-                $centerRow = max(4, intval($highestRow / 2));
-
-                // Create watermark image
-                $img = imagecreatetruecolor(300, 100);
-                imagesavealpha($img, true);
-                $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-                imagefill($img, 0, 0, $transparent);
-
-                $gray = imagecolorallocate($img, 211, 211, 211);
-
-                $fontPath = '/System/Library/Fonts/Helvetica.ttc';
-                if (file_exists($fontPath)) {
-                    imagettftext($img, 48, 0, 20, 70, $gray, $fontPath, 'Page 1');
-                } else {
-                    for ($i = 0; $i < 3; $i++) {
-                        for ($j = 0; $j < 3; $j++) {
-                            imagestring($img, 5, 50 + $i, 40 + $j, 'Page 1', $gray);
-                        }
-                    }
-                }
-
-                $drawing = new MemoryDrawing();
-                $drawing->setImageResource($img);
-                $drawing->setRenderingFunction(MemoryDrawing::RENDERING_PNG);
-                $drawing->setMimeType(MemoryDrawing::MIMETYPE_PNG);
-                $drawing->setCoordinates('D' . $centerRow);
-                $drawing->setWorksheet($sheet);
-            }
-        ];
-    }
 }
