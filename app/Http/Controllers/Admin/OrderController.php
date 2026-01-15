@@ -227,8 +227,12 @@ class OrderController extends Controller
         }
 
         $order_weight = 0;
+        // Merge duplicate products with same product_id and unit_price
+        $mergedProducts = $this->mergeProducts($data);
+
         // process order product
-        foreach ($data['product_id'] as $key => $product_id) {
+        foreach ($mergedProducts as $productData) {
+            $product_id = $productData['product_id'];
             $product = DB::table('products')
                 ->select(
                     'products.id',
@@ -245,12 +249,12 @@ class OrderController extends Controller
                     ),
                     DB::raw("
                         (
-                            SELECT pdp.price 
+                            SELECT pdp.price
                             FROM product_default_pricings pdp
-                            WHERE pdp.product_id = products.id 
+                            WHERE pdp.product_id = products.id
                             AND pdp.customer_category_id = (
-                                SELECT u.customer_category_id 
-                                FROM users u 
+                                SELECT u.customer_category_id
+                                FROM users u
                                 WHERE u.id = {$user->id}
                             )
                         ) as category_price"
@@ -258,10 +262,10 @@ class OrderController extends Controller
                 )
                 ->where('id', $product_id)
                 ->first();
-            
+
             $quantity = null;
             $weight = null;
-            $qtyWeight = $data['quantity'][$key] ?? 0;
+            $qtyWeight = $productData['quantity'];
 
             if ($product->sell_in == "qty") {
                 $quantity = $qtyWeight;
@@ -269,10 +273,10 @@ class OrderController extends Controller
                 $weight = $qtyWeight;
             }
 
-            // Use submitted unit_price if provided, otherwise fall back to calculated price
-            $unit_price = $data['unit_price'][$key] ?? $product->daily_price ?? $product->category_price ?? $product->price;
+            // Use submitted unit_price from merged data
+            $unit_price = $productData['unit_price'] ?? $product->daily_price ?? $product->category_price ?? $product->price;
             $price = $unit_price * $qtyWeight;
-            
+
             $order_product = OrderProduct::create(
                 [
                     "order_id" => $order->id,
@@ -282,15 +286,15 @@ class OrderController extends Controller
                     "weight" => $weight ?? null, //$product->weight == '' ? 0 : $product->weight * $quantity,
                     "unit_price" => $unit_price,
                     "price" => $price,
-                    "remark" => $data['remark'][$key],
+                    "remark" => $productData['remark'],
                     'nos' => null,
                     "status" => OrderProduct::$status['active'],
                 ]
             );
             $order_weight += ($product->weight == '' ? 0 : $product->weight * $quantity);
-            
-            if (isset($data['product_options'][$key]) && $data['product_options'][$key]) {
-                foreach ($data['product_options'][$key] as $opt => $opt_itm) {
+
+            if (isset($productData['options']) && $productData['options']) {
+                foreach ($productData['options'] as $opt => $opt_itm) {
                     if ($opt_itm) {
                         $order_product_option = OrderProductOption::create(
                             [
@@ -439,20 +443,19 @@ class OrderController extends Controller
             )->save();
         }
 
-        // remove all added product first, add back later
-        // Order::where('order_id', $order->id)->delete();
-
         $pricing_date = $request['pricing_date'] ?? date('Y-m-d');
 
-        // Get original active product IDs to detect removed products
-        $originalProductIds = OrderProduct::where('order_id', $order->id)
+        // Merge duplicate products with same product_id and unit_price
+        $mergedProducts = $this->mergeProducts($data);
+
+        // Mark all existing active order products as 'removed' first
+        // They will be recreated below with merged quantities
+        OrderProduct::where('order_id', $order->id)
             ->where('status', OrderProduct::$status['active'])
-            ->pluck('product_id')
-            ->toArray();
+            ->update(['status' => OrderProduct::$status['removed']]);
 
-        $submittedProductIds = array_filter($data['product_id'] ?? []);
-
-        foreach ($data['product_id'] as $key => $product_id) {
+        foreach ($mergedProducts as $productData) {
+            $product_id = $productData['product_id'];
             $product = DB::table('products')
                 ->select(
                     'products.id',
@@ -482,40 +485,37 @@ class OrderController extends Controller
                 )
                 ->where('id', $product_id)
                 ->first();
-            
+
             $quantity = null;
             $weight = null;
+            $qtyWeight = $productData['quantity'];
 
             if ($product->sell_in == "qty") {
-                $quantity = $data['quantity'][$key] ?? 0;
-                $qtyWeight = $quantity;
+                $quantity = $qtyWeight;
             } else {
-                $weight = $data['quantity'][$key] ?? 0;
-                $qtyWeight = $weight;
+                $weight = $qtyWeight;
             }
-           
-            // Use submitted unit_price if provided, otherwise fall back to calculated price
-            $unit_price = $data['unit_price'][$key] ?? $product->daily_price ?? $product->category_price ?? $product->price;
+
+            // Use submitted unit_price from merged data
+            $unit_price = $productData['unit_price'] ?? $product->daily_price ?? $product->category_price ?? $product->price;
             $price = $unit_price * $qtyWeight;
 
-            $order_product = OrderProduct::updateOrCreate(
+            $order_product = OrderProduct::create(
                 [
                     "order_id" => $order->id,
-                    "product_id" => $product_id
-                ],
-                [
+                    "product_id" => $product_id,
                     "product_name" => $product->name,
                     "quantity" => $quantity ?? null,
                     "weight" => $weight ?? null,
                     "unit_price" => $unit_price,
                     "price" => $price,
-                    "remark" => $data['remark'][$key],
+                    "remark" => $productData['remark'],
                     "status" => OrderProduct::$status['active'],
                 ]
             );
-            
-            if (isset($data['product_options'][$key]) && $data['product_options'][$key]) {
-                foreach ($data['product_options'][$key] as $opt => $opt_itm) {
+
+            if (isset($productData['options']) && $productData['options']) {
+                foreach ($productData['options'] as $opt => $opt_itm) {
                     $order_product_option = OrderProductOption::create(
                         [
                             "order_product_id" => $order_product->id,
@@ -527,14 +527,6 @@ class OrderController extends Controller
                 }
             }
             $total += $price;
-        }
-
-        // Mark products that were removed (not in submission) as 'removed'
-        $productsToRemove = array_diff($originalProductIds, $submittedProductIds);
-        if (!empty($productsToRemove)) {
-            OrderProduct::where('order_id', $order->id)
-                ->whereIn('product_id', $productsToRemove)
-                ->update(['status' => OrderProduct::$status['removed']]);
         }
 
         $order->fill(
@@ -668,6 +660,36 @@ class OrderController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Merge duplicate products with same product_id and unit_price
+     * Combines quantities while keeping the first remark
+     */
+    private function mergeProducts($data)
+    {
+        $mergedProducts = [];
+        foreach ($data['product_id'] as $index => $productId) {
+            if (empty($productId)) continue;
+
+            $unitPrice = $data['unit_price'][$index] ?? 0;
+            $key = $productId . '_' . $unitPrice;
+
+            if (isset($mergedProducts[$key])) {
+                // Same product + same price: merge quantity
+                $mergedProducts[$key]['quantity'] += floatval($data['quantity'][$index] ?? 0);
+                // Keep first remark (don't overwrite)
+            } else {
+                $mergedProducts[$key] = [
+                    'product_id' => $productId,
+                    'quantity' => floatval($data['quantity'][$index] ?? 0),
+                    'unit_price' => $unitPrice,
+                    'remark' => $data['remark'][$index] ?? '',
+                    'options' => $data['product_options'][$index] ?? []
+                ];
+            }
+        }
+        return array_values($mergedProducts);
     }
 
     public function getCustomerData(Request $request)

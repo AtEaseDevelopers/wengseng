@@ -238,6 +238,13 @@
             productsData[p.id] = p;
         });
 
+        // Override with existing order product prices
+        existingProducts.forEach(function(p) {
+            if (productsData[p.product_id]) {
+                productsData[p.product_id].price = p.unit_price;
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             // Populate payment methods
             if (payment_method_options) {
@@ -438,10 +445,13 @@
                             productsData[id].price = data.products[id].price;
                         }
                     });
-                    // Refresh displayed prices for already-selected products
+                    // Only refresh prices for rows that don't already have a price set
+                    // (i.e., newly added rows, not existing order products)
                     $('.product-row').each(function() {
                         var productId = $(this).find('.product-select').val();
-                        if (productId) {
+                        var currentPrice = parseFloat($(this).find('.price-input').val()) || 0;
+                        // Only update if no price is set (new row)
+                        if (productId && currentPrice === 0) {
                             onProductSelect($(this));
                         }
                     });

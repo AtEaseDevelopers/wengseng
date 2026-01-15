@@ -134,16 +134,27 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             $customerTotals[$userKey] = 0;
         }
         foreach ($products as $product) {
-            $receive_qty = DB::table('product_receive_quantities')
+            // Get all receive records and sum qty, use first remark
+            $receive_records = DB::table('product_receive_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
                 ->where('date', Carbon::parse($this->request->fdate)->subDays(1)->format('Y-m-d'))
-                ->first();
-            $balance_qty = DB::table('product_balance_quantities')
+                ->get();
+            $receive_qty = (object) [
+                'qty' => $receive_records->sum(fn($r) => floatval($r->qty)),
+                'remark' => $receive_records->first()?->remark
+            ];
+
+            // Get all balance records and sum qty, use first remark
+            $balance_records = DB::table('product_balance_quantities')
                 ->select('qty', 'remark')
                 ->where('product_id', $product->id)
                 ->where('date', Carbon::parse($this->request->fdate)->subDays(2)->format('Y-m-d'))
-                ->first();
+                ->get();
+            $balance_qty = (object) [
+                'qty' => $balance_records->sum(fn($r) => floatval($r->qty)),
+                'remark' => $balance_records->first()?->remark
+            ];
             $row = ['Product' => $product->name, 'Receive' => $receive_qty->qty ?? 0, 'Receive Remark' => $receive_qty->remark ?? null, 'Balance' => $balance_qty->qty ?? 0, 'Balance Remark' => $balance_qty->remark ?? null, 'UOM' => $product->uom_name];
             $productTotal = 0;
             $hasData = false;
