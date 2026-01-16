@@ -35,10 +35,13 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
             })
-            ->where('orders.status', 'active')
+            ->when($this->request->status, function ($q) {
+                $q->where('orders.status', $this->request->status);
+            })
             ->when($this->request->fdate, function ($q) {
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
-            });
+            })
+            ->where('orders.status', '!=', 'cancelled');
 
         $this->users = $query->select('users.id', 'users.sql_customer_code', 'users.name')
             ->distinct()
@@ -60,7 +63,10 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
             })
-            ->where('orders.status', 'active')
+            ->when($this->request->status, function ($q) {
+                $q->where('orders.status', $this->request->status);
+            })
+            ->where('orders.status', '!=', 'cancelled')
             ->when($this->request->fdate, function ($q) {
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
@@ -178,7 +184,10 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                     ->join('orders', 'orders.id', '=', 'order_products.order_id')
                     ->where('orders.user_id', $user->id)
                     ->where('order_products.product_id', $product->id)
-                    ->where('orders.status', 'active')
+                    ->when($this->request->status, function ($q) {
+                        $q->where('orders.status', $this->request->status);
+                    })
+                    ->where('orders.status', '!=', 'cancelled')
                     ->when($this->request->fdate, function ($q) {
                         $q->whereDate('orders.delivering_date', $this->request->fdate);
                     })
