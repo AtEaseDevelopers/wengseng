@@ -28,6 +28,7 @@ class CustomerUomsReport implements WithMultipleSheets
             ->join('products', 'products.product_category_id', '=', 'product_categories.id')
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
+            ->where('order_products.status', 'active')
             ->when($this->request->status, function ($q) {
                 $q->where('orders.status', $this->request->status);
             })
@@ -65,6 +66,7 @@ class CustomerUomsReport implements WithMultipleSheets
         $users = DB::table('users')
             ->join('orders', 'orders.user_id', '=', 'users.id')
             ->join('order_products', 'order_products.order_id', '=', 'orders.id')
+            ->where('order_products.status', 'active')
             ->when($this->request->status, function ($q) {
                 $q->where('orders.status', $this->request->status);
             })

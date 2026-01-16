@@ -31,6 +31,7 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
             ->join('order_products', 'order_products.order_id', '=', 'orders.id')
             ->join('products', 'products.id', '=', 'order_products.product_id')
             ->whereIn('products.product_category_id', $categoryIds)
+            ->where('order_products.status', 'active')
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -59,6 +60,7 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
             ->whereIn('products.product_category_id', $categoryIds)
+            ->where('order_products.status', 'active')
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -184,6 +186,7 @@ class ProductCategoriesSheetExport implements FromCollection, WithHeadings, With
                     ->join('orders', 'orders.id', '=', 'order_products.order_id')
                     ->where('orders.user_id', $user->id)
                     ->where('order_products.product_id', $product->id)
+                    ->where('order_products.status', 'active')
                     ->when($this->request->status, function ($q) {
                         $q->where('orders.status', $this->request->status);
                     })

@@ -30,6 +30,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
             ->join('uoms', 'uoms.id', '=', 'products.uom_id')
             ->join('product_categories', 'product_categories.id', '=', 'products.product_category_id')
             ->where('orders.user_id', $this->user->id)
+            ->where('order_products.status', 'active')
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -63,6 +64,7 @@ class CustomerSheetExport implements FromCollection, WithHeadings, WithTitle, Wi
                     ->join('orders', 'orders.id', '=', 'order_products.order_id')
                     ->where('orders.user_id', $this->user->id)
                     ->where('order_products.product_id', $product->id)
+                    ->where('order_products.status', 'active')
                     ->when($this->request->status, fn($q) => $q->where('orders.status', $this->request->status))
                     ->where('orders.status', '!=', 'cancelled')
                     ->when(

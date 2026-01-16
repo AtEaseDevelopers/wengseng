@@ -25,6 +25,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->join('order_products', 'order_products.order_id', '=', 'orders.id')
             ->join('products', 'products.id', '=', 'order_products.product_id')
             ->where('products.product_category_id', 30)
+            ->where('order_products.status', 'active')
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -50,6 +51,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
             ->where('products.product_category_id', 30)
+            ->where('order_products.status', 'active')
             ->where(function ($q) {
                 $q->where('order_products.quantity', '>', 0)
                 ->orWhere('order_products.weight', '>', 0);
@@ -166,6 +168,7 @@ class BarangImportSheetExport implements FromCollection, WithHeadings, WithTitle
                     ->join('orders', 'orders.id', '=', 'order_products.order_id')
                     ->where('orders.user_id', $user->id)
                     ->where('order_products.product_id', $product->id)
+                    ->where('order_products.status', 'active')
                     ->when($this->request->status, function ($q) {
                         $q->where('orders.status', $this->request->status);
                     })
