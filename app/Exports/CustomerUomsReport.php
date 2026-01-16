@@ -28,13 +28,10 @@ class CustomerUomsReport implements WithMultipleSheets
             ->join('products', 'products.product_category_id', '=', 'product_categories.id')
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
-            ->when($this->request->status, function ($q) {
-                $q->where('orders.status', $this->request->status);
-            })
+            ->where('orders.status', 'active')
             ->when($this->request->fdate, function ($q) {
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
-            ->where('orders.status', '!=', 'cancelled')
             ->whereNotIn('product_categories.category_name', ['IMPORT VEGETABLES'])
             ->select('product_categories.id', 'product_categories.category_name', 'product_categories.excel_sheet_batch')
             ->distinct()
@@ -65,14 +62,11 @@ class CustomerUomsReport implements WithMultipleSheets
         $users = DB::table('users')
             ->join('orders', 'orders.user_id', '=', 'users.id')
             ->join('order_products', 'order_products.order_id', '=', 'orders.id')
-            ->when($this->request->status, function ($q) {
-                $q->where('orders.status', $this->request->status);
-            })
+            ->where('orders.status', 'active')
             ->when($this->request->fdate, function ($q) {
                 $q->whereDate('orders.delivering_date', $this->request->fdate);
             })
             ->select('users.id', 'users.sql_customer_code', 'users.name', 'users.customer_category_id')
-            ->where('orders.status', '!=', 'cancelled')
             ->distinct()
             ->orderBy('users.sql_customer_code', 'asc')
             ->get();
