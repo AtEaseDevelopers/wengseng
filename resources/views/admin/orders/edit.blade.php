@@ -284,6 +284,11 @@
             // Initialize Select2 on all product dropdowns
             initAllProductSelect2();
 
+            // Auto-open product Select2 dropdown on focus
+            $(document).on('focus', '.select2-selection--single', function() {
+                $(this).closest('.select2-container').siblings('select.product-select').select2('open');
+            });
+
             // Fetch customer-specific prices on page load
             fetchCustomerPrices({{ $customer->id }});
 
