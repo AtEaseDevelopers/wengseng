@@ -355,6 +355,11 @@
                 allowClear: true,
                 data: selectData
             });
+
+            // Auto-focus search field when Select2 is opened
+            $select.on('select2:open', function() {
+                document.querySelector('.select2-container--open .select2-search__field').focus();
+            });
         }
 
         function onProductSelect($row) {
