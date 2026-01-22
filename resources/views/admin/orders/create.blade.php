@@ -288,6 +288,11 @@
             // Initialize Select2 on all product dropdowns
             initAllProductSelect2();
 
+            // Auto-open product Select2 dropdown on focus
+            $(document).on('focus', '.select2-selection--single', function() {
+                $(this).closest('.select2-container').siblings('select.product-select').select2('open');
+            });
+
             // Add Line button
             $('#btn-add-line').on('click', function() {
                 addProductRow();
@@ -386,6 +391,11 @@
                 placeholder: 'Choose product',
                 allowClear: true,
                 data: selectData
+            });
+
+            // Auto-open dropdown when Select2 is focused
+            $select.on('select2:open', function() {
+                document.querySelector('.select2-container--open .select2-search__field').focus();
             });
         }
 
